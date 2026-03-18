@@ -31,7 +31,7 @@ const Profile = () => {
           <User size={36} className="text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">María García</h2>
+          <h2 className="text-xl font-bold text-foreground">Oscar Aldana</h2>
           <p className="text-base text-muted-foreground">72 años · Diabetes Tipo 2</p>
           <p className="text-sm text-primary font-semibold mt-1">Perfil completo ✓</p>
         </div>

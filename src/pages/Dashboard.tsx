@@ -15,7 +15,7 @@ const Dashboard = () => {
         <img src={logo} alt="DiabeSmart" className="w-11 h-11 rounded-full" />
         <div>
           <p className="text-base text-muted-foreground font-medium">Buenos días</p>
-          <h1 className="text-2xl font-bold text-foreground">María García</h1>
+          <h1 className="text-2xl font-bold text-foreground">Oscar Aldana</h1>
         </div>
       </motion.div>
 
