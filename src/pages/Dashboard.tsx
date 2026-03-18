@@ -14,9 +14,12 @@ const Dashboard = () => {
         className="flex items-center gap-3 mb-8"
       >
         <img src={logo} alt="DiabeSmart" className="w-11 h-11 rounded-full" />
-        <div>
+        <div className="flex-1">
           <p className="text-base text-muted-foreground font-medium">Buenos días</p>
           <h1 className="text-2xl font-bold text-foreground">Oscar Aldana</h1>
+        </div>
+        <DarkModeToggle />
+      </motion.div>
         </div>
       </motion.div>
 
