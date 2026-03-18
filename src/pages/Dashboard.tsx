@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Clock, Droplets, Utensils, Syringe } from "lucide-react";
 import GlucoseCircle from "@/components/GlucoseCircle";
+import DarkModeToggle from "@/components/DarkModeToggle";
 import logo from "@/assets/logo.png";
 
 const Dashboard = () => {
