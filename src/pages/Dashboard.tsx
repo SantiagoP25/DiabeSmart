@@ -20,8 +20,6 @@ const Dashboard = () => {
         </div>
         <DarkModeToggle />
       </motion.div>
-        </div>
-      </motion.div>
 
       {/* Glucose Circle */}
       <div className="flex justify-center mb-8">
