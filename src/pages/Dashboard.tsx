@@ -14,6 +14,8 @@ interface GlucoseEntry {
   timestamp: Date;
 }
 
+const STORAGE_KEY = "diabesmart_records";
+
 const Dashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
@@ -23,6 +25,17 @@ const Dashboard = () => {
 
   const handleSaveEntry = (entry: GlucoseEntry) => {
     setLastEntry(entry);
+    // Persist to localStorage
+    try {
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      existing.push({
+        glucose: entry.glucose,
+        meal: entry.meal,
+        insulinUnits: entry.insulinUnits,
+        timestamp: entry.timestamp.toISOString(),
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    } catch { /* ignore */ }
   };
 
   const timeSinceLastReading = () => {

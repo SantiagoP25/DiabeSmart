@@ -1,15 +1,39 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Heart, Pill, Phone, Settings, ChevronRight, LogOut } from "lucide-react";
+import { User, Heart, Pill, Phone, Settings, ChevronRight, LogOut, Check, Syringe } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
-const menuItems = [
-  { icon: Heart, label: "Datos de salud", desc: "Tipo de diabetes, peso, edad" },
-  { icon: Pill, label: "Medicamentos", desc: "Insulina, metformina" },
-  { icon: Phone, label: "Contactos de emergencia", desc: "Doctor, familiar" },
-  { icon: Settings, label: "Configuración", desc: "Notificaciones, idioma" },
-];
-
 const Profile = () => {
+  const [editingRatio, setEditingRatio] = useState(false);
+  const [ratio, setRatio] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("diabesmart_ratio");
+    if (saved) setRatio(saved);
+  }, []);
+
+  const handleSaveRatio = () => {
+    const val = parseFloat(ratio);
+    if (!val || val <= 0) {
+      toast({ title: "Error", description: "Ingresa un ratio válido (ej: 10)" });
+      return;
+    }
+    localStorage.setItem("diabesmart_ratio", ratio);
+    setEditingRatio(false);
+    toast({ title: "✅ Ratio guardado", description: `Tu ratio es 1:${val}` });
+  };
+
+  const savedRatio = localStorage.getItem("diabesmart_ratio");
+
+  const menuItems = [
+    { icon: Heart, label: "Datos de salud", desc: "Tipo de diabetes, peso, edad" },
+    { icon: Pill, label: "Medicamentos", desc: "Insulina, metformina" },
+    { icon: Phone, label: "Contactos de emergencia", desc: "Doctor, familiar" },
+    { icon: Settings, label: "Configuración", desc: "Notificaciones, idioma" },
+  ];
+
   return (
     <div className="min-h-screen pb-28 px-5 pt-6 max-w-md mx-auto">
       <motion.h1
@@ -54,6 +78,64 @@ const Profile = () => {
             <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
           </div>
         ))}
+      </motion.div>
+
+      {/* Insulin Ratio Setting */}
+      <motion.div
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.25 }}
+        className="glass-card rounded-outer p-5 mb-6"
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Syringe size={20} className="text-primary" />
+            <h3 className="text-base font-bold text-foreground">Ratio de Insulina</h3>
+          </div>
+          {!editingRatio && savedRatio && (
+            <button
+              onClick={() => setEditingRatio(true)}
+              className="text-xs text-primary font-semibold"
+            >
+              Cambiar
+            </button>
+          )}
+        </div>
+
+        {editingRatio || !savedRatio ? (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Tu médico te indica cuántos gramos de carbohidratos cubre 1 unidad de insulina.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Ej: 10"
+                value={ratio}
+                onChange={(e) => setRatio(e.target.value)}
+                min={1}
+                max={100}
+                className="text-lg h-12 rounded-inner flex-1"
+              />
+              <button
+                onClick={handleSaveRatio}
+                className="h-12 px-4 bg-primary text-primary-foreground rounded-inner font-semibold flex items-center gap-1"
+              >
+                <Check size={16} />
+                Guardar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p className="text-2xl font-bold text-foreground">
+              1 U por cada <span className="text-primary">{savedRatio}g</span> de HC
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Configurado por tu profesional de salud
+            </p>
+          </div>
+        )}
       </motion.div>
 
       {/* Menu */}

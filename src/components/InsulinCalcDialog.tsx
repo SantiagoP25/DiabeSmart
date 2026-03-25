@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Syringe, Calculator, Settings2, Check } from "lucide-react";
+import { Syringe, Calculator, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface InsulinCalcDialogProps {
@@ -18,19 +18,13 @@ interface InsulinCalcDialogProps {
 }
 
 const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs }: InsulinCalcDialogProps) => {
-  const [ratio, setRatio] = useState("");
   const [carbs, setCarbs] = useState("");
   const [showResult, setShowResult] = useState(false);
-  const [editingRatio, setEditingRatio] = useState(false);
+  const [ratio, setRatio] = useState(0);
 
-  // Load saved ratio
   useEffect(() => {
     const saved = localStorage.getItem("diabesmart_ratio");
-    if (saved) {
-      setRatio(saved);
-    } else {
-      setEditingRatio(true);
-    }
+    setRatio(saved ? parseFloat(saved) : 0);
   }, [open]);
 
   useEffect(() => {
@@ -39,24 +33,15 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs }: InsulinCalcDial
     }
   }, [initialCarbs]);
 
-  const ratioNum = parseFloat(ratio);
   const carbsNum = parseFloat(carbs);
-  const dose = ratioNum > 0 && carbsNum > 0 ? carbsNum / ratioNum : 0;
-
-  const handleSaveRatio = () => {
-    if (!ratioNum || ratioNum <= 0) {
-      toast({ title: "Error", description: "Ingresa un ratio válido (ej: 10)" });
-      return;
-    }
-    localStorage.setItem("diabesmart_ratio", ratio);
-    setEditingRatio(false);
-    toast({ title: "✅ Ratio guardado", description: `Tu ratio es 1:${ratioNum}` });
-  };
+  const dose = ratio > 0 && carbsNum > 0 ? carbsNum / ratio : 0;
 
   const handleCalculate = () => {
-    if (!ratioNum || ratioNum <= 0) {
-      toast({ title: "⚠️ Configura tu ratio", description: "Primero necesitas establecer tu ratio de insulina" });
-      setEditingRatio(true);
+    if (!ratio || ratio <= 0) {
+      toast({
+        title: "⚠️ Ratio no configurado",
+        description: "Ve a Mi Perfil → Configuración para establecer tu ratio de insulina.",
+      });
       return;
     }
     if (!carbsNum || carbsNum <= 0) {
@@ -88,50 +73,20 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs }: InsulinCalcDial
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          {/* Ratio Section */}
-          <div className="glass-card rounded-inner p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
-                <Settings2 size={18} className="text-primary" />
-                Tu Ratio (1 U : ___ g HC)
-              </Label>
-              {!editingRatio && ratioNum > 0 && (
-                <button
-                  onClick={() => setEditingRatio(true)}
-                  className="text-xs text-primary font-semibold"
-                >
-                  Cambiar
-                </button>
-              )}
-            </div>
-
-            {editingRatio ? (
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="Ej: 10"
-                  value={ratio}
-                  onChange={(e) => setRatio(e.target.value)}
-                  min={1}
-                  max={100}
-                  className="text-lg h-12 rounded-inner flex-1"
-                />
-                <button
-                  onClick={handleSaveRatio}
-                  className="h-12 px-4 bg-primary text-primary-foreground rounded-inner font-semibold flex items-center gap-1"
-                >
-                  <Check size={16} />
-                  Guardar
-                </button>
-              </div>
-            ) : (
-              <p className="text-2xl font-bold text-foreground">
-                1 U por cada <span className="text-primary">{ratioNum}g</span> de HC
+          {/* Ratio display */}
+          <div className="glass-card rounded-inner p-4">
+            {ratio > 0 ? (
+              <p className="text-lg font-bold text-foreground">
+                Tu ratio: 1 U por cada <span className="text-primary">{ratio}g</span> de HC
               </p>
+            ) : (
+              <div className="flex items-center gap-3 text-status-warning">
+                <AlertTriangle size={20} />
+                <p className="text-sm font-semibold">
+                  Ratio no configurado. Ve a <span className="underline">Mi Perfil → Configuración</span> para establecerlo.
+                </p>
+              </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Tu médico te indica cuántos gramos de carbohidratos cubre 1 unidad de insulina.
-            </p>
           </div>
 
           {/* Carbs Input */}
@@ -171,7 +126,7 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs }: InsulinCalcDial
                 {dose % 1 === 0 ? dose : dose.toFixed(1)} U
               </p>
               <p className="text-sm text-muted-foreground">
-                {carbsNum}g HC ÷ {ratioNum} ratio = <span className="font-bold text-foreground">{dose.toFixed(2)} unidades</span>
+                {carbsNum}g HC ÷ {ratio} ratio = <span className="font-bold text-foreground">{dose.toFixed(2)} unidades</span>
               </p>
               <div className="mt-3 pt-3 border-t border-primary/20">
                 <p className="text-xs text-muted-foreground">
