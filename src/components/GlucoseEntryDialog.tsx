@@ -23,9 +23,11 @@ interface GlucoseEntryDialogProps {
   }) => void;
 }
 
+const mealOptions = ["Desayuno", "Almuerzo", "Comida", "Otro"] as const;
+
 const GlucoseEntryDialog = ({ open, onOpenChange, onSave }: GlucoseEntryDialogProps) => {
   const [glucose, setGlucose] = useState("");
-  const [meal, setMeal] = useState("");
+  const [meal, setMeal] = useState<string>("");
   const [insulinUnits, setInsulinUnits] = useState("");
 
   const handleSubmit = () => {
@@ -43,7 +45,7 @@ const GlucoseEntryDialog = ({ open, onOpenChange, onSave }: GlucoseEntryDialogPr
 
     onSave({
       glucose: glucoseNum,
-      meal: meal.trim() || "Sin comida registrada",
+      meal: meal || "Sin especificar",
       insulinUnits: unitsNum || 0,
       timestamp: new Date(),
     });
@@ -63,7 +65,7 @@ const GlucoseEntryDialog = ({ open, onOpenChange, onSave }: GlucoseEntryDialogPr
             Registrar glucosa
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Ingresa tu lectura actual, comida y dosis de insulina.
+            Ingresa tu lectura actual, momento del día y dosis de insulina.
           </DialogDescription>
         </DialogHeader>
 
@@ -85,20 +87,28 @@ const GlucoseEntryDialog = ({ open, onOpenChange, onSave }: GlucoseEntryDialogPr
             />
           </div>
 
-          {/* Meal */}
+          {/* Meal - 4 options */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Utensils size={18} className="text-primary" />
-              Comida (opcional)
+              Momento
             </Label>
-            <Input
-              type="text"
-              placeholder="Ej: Arroz con pollo"
-              value={meal}
-              onChange={(e) => setMeal(e.target.value)}
-              maxLength={100}
-              className="text-lg h-12 rounded-inner"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              {mealOptions.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setMeal(opt)}
+                  className={`py-3 px-4 rounded-inner text-sm font-semibold transition-colors border ${
+                    meal === opt
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/50 text-foreground border-border"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Insulin Units */}
