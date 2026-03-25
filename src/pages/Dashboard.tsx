@@ -54,7 +54,7 @@ const Dashboard = () => {
         animate={{ y: 0, opacity: 1 }}
         className="flex items-center gap-3 mb-8"
       >
-        <img src={logo} alt="DiabeSmart" className="w-11 h-11 rounded-full" />
+        <img src={logo} alt="DiabeSmart" className="w-11 h-11 rounded-full dark:brightness-150 dark:contrast-125" />
         <div className="flex-1">
           <p className="text-base text-muted-foreground font-medium">Buenos días</p>
           <h1 className="text-2xl font-bold text-foreground">Oscar Aldana</h1>
