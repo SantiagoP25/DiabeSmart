@@ -4,6 +4,7 @@ import { Clock, Droplets, Utensils, Syringe } from "lucide-react";
 import GlucoseCircle from "@/components/GlucoseCircle";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import GlucoseEntryDialog from "@/components/GlucoseEntryDialog";
+import InsulinCalcDialog from "@/components/InsulinCalcDialog";
 import logo from "@/assets/logo.png";
 
 interface GlucoseEntry {
@@ -15,6 +16,7 @@ interface GlucoseEntry {
 
 const Dashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
   const [lastEntry, setLastEntry] = useState<GlucoseEntry | null>(null);
 
   const currentGlucose = lastEntry?.glucose ?? 104;
@@ -116,7 +118,10 @@ const Dashboard = () => {
             <Droplets size={20} />
             Registrar glucosa
           </button>
-          <button className="soft-press bg-secondary text-secondary-foreground rounded-button py-4 text-base font-semibold flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCalcOpen(true)}
+            className="soft-press bg-secondary text-secondary-foreground rounded-button py-4 text-base font-semibold flex items-center justify-center gap-2"
+          >
             <Syringe size={20} />
             Calcular dosis
           </button>
@@ -127,6 +132,11 @@ const Dashboard = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSave={handleSaveEntry}
+      />
+
+      <InsulinCalcDialog
+        open={calcOpen}
+        onOpenChange={setCalcOpen}
       />
     </div>
   );
