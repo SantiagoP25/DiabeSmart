@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, ChevronDown, Milk, Wheat, Apple, Carrot, Nut, GlassWater, UtensilsCrossed } from "lucide-react";
+import { Search, Sparkles, ChevronDown, Milk, Wheat, Apple, Carrot, Nut, GlassWater, UtensilsCrossed, Plus, Calculator } from "lucide-react";
 import { carbsDatabase, foodCategories, type FoodItem, type FoodCategory } from "@/data/carbsDatabase";
+import InsulinCalcDialog from "@/components/InsulinCalcDialog";
 
 const categoryIcons: Record<FoodCategory, React.ElementType> = {
   "Lácteos": Milk,
@@ -29,10 +30,19 @@ const giLabel = (gi: string) => {
   return "Alto";
 };
 
+/** Compute carb grams from rations (1 ration = 10g HC) */
+const getCarbGrams = (item: FoodItem): string => {
+  const r = parseFloat(item.rations);
+  if (isNaN(r) || item.rations === "No valorable" || item.rations === "-") return "-";
+  return (r * 10).toFixed(0);
+};
+
 const FoodLog = () => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<FoodCategory | "Todas">("Todas");
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [calcInitialCarbs, setCalcInitialCarbs] = useState<number>(0);
 
   const filtered = useMemo(() => {
     let items = carbsDatabase;
@@ -54,6 +64,12 @@ const FoodLog = () => {
     });
     return map;
   }, [filtered]);
+
+  const handleCalcFromFood = (item: FoodItem) => {
+    const carbs = parseFloat(getCarbGrams(item));
+    setCalcInitialCarbs(isNaN(carbs) ? 0 : carbs);
+    setCalcOpen(true);
+  };
 
   return (
     <div className="min-h-screen pb-28 px-5 pt-6 max-w-md mx-auto">
@@ -167,44 +183,60 @@ const FoodLog = () => {
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-4 pb-3">
+                    <div className="px-3 pb-3">
                       {/* Header row */}
-                      <div className="grid grid-cols-[1fr_60px_50px] gap-2 pb-2 border-b border-border mb-2">
-                        <span className="text-xs font-semibold text-muted-foreground">Alimento</span>
-                        <span className="text-xs font-semibold text-muted-foreground text-center">Ración</span>
-                        <span className="text-xs font-semibold text-muted-foreground text-center">I.G.</span>
+                      <div className="grid grid-cols-[1fr_45px_45px_40px_28px] gap-1 pb-2 border-b border-border mb-1">
+                        <span className="text-[10px] font-semibold text-muted-foreground">Alimento</span>
+                        <span className="text-[10px] font-semibold text-muted-foreground text-center">Cant.</span>
+                        <span className="text-[10px] font-semibold text-muted-foreground text-center">HC(g)</span>
+                        <span className="text-[10px] font-semibold text-muted-foreground text-center">I.G.</span>
+                        <span className="text-[10px] font-semibold text-muted-foreground text-center"></span>
                       </div>
 
-                      {items.map((item, i) => (
-                        <motion.div
-                          key={item.name}
-                          initial={{ x: -10, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: i * 0.02 }}
-                          className="grid grid-cols-[1fr_60px_50px] gap-2 py-2.5 border-b border-border/50 last:border-0 items-center"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {item.measure !== "-" ? item.measure : `${item.gramsPerRation}g = 1 ración`}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <span className="text-sm font-bold text-foreground">
-                              {item.rations !== "-" && item.rations !== "No valorable" ? item.rations : "-"}
-                            </span>
-                            <p className="text-[10px] text-muted-foreground">HC</p>
-                          </div>
-                          <div className="text-center">
-                            <span className={`text-sm font-bold ${giColor(item.gi)}`}>
-                              {item.gi !== "-" ? item.gi : "-"}
-                            </span>
-                            <p className={`text-[10px] ${giColor(item.gi)}`}>
-                              {giLabel(item.gi)}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
+                      {items.map((item, i) => {
+                        const carbG = getCarbGrams(item);
+                        return (
+                          <motion.div
+                            key={item.name}
+                            initial={{ x: -10, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: i * 0.02 }}
+                            className="grid grid-cols-[1fr_45px_45px_40px_28px] gap-1 py-2.5 border-b border-border/50 last:border-0 items-center"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {item.measure !== "-" ? item.measure : `${item.gramsPerRation}g`}
+                              </p>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-xs font-bold text-foreground">
+                                {item.gramsPerRation}g
+                              </span>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-xs font-bold text-primary">
+                                {carbG !== "-" ? `${carbG}g` : "-"}
+                              </span>
+                            </div>
+                            <div className="text-center">
+                              <span className={`text-xs font-bold ${giColor(item.gi)}`}>
+                                {item.gi !== "-" ? item.gi : "-"}
+                              </span>
+                              <p className={`text-[8px] ${giColor(item.gi)}`}>
+                                {giLabel(item.gi)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleCalcFromFood(item)}
+                              className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center"
+                              title="Calcular insulina"
+                            >
+                              <Plus size={14} className="text-primary" />
+                            </button>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </motion.div>
                 )}
@@ -229,7 +261,13 @@ const FoodLog = () => {
         transition={{ delay: 0.5 }}
         className="mt-6 glass-card rounded-inner p-4"
       >
-        <p className="text-xs font-bold text-foreground mb-2">Índice Glucémico (I.G.)</p>
+        <p className="text-xs font-bold text-foreground mb-2">Columnas de la tabla</p>
+        <div className="space-y-1 text-xs text-muted-foreground mb-3">
+          <p><span className="font-semibold text-foreground">Cant.</span> = Gramos de alimento que equivalen a 1 ración</p>
+          <p><span className="font-semibold text-foreground">HC(g)</span> = Gramos de carbohidratos en la medida habitual</p>
+          <p><span className="font-semibold text-foreground">I.G.</span> = Índice glucémico</p>
+        </div>
+        <p className="text-xs font-bold text-foreground mb-2">Índice Glucémico</p>
         <div className="flex gap-4 text-xs">
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
@@ -245,6 +283,24 @@ const FoodLog = () => {
           </span>
         </div>
       </motion.div>
+
+      {/* Floating Calculate Button */}
+      <motion.button
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.7 }}
+        onClick={() => { setCalcInitialCarbs(0); setCalcOpen(true); }}
+        className="w-full mt-6 bg-primary text-primary-foreground rounded-button py-5 text-xl font-bold soft-press flex items-center justify-center gap-3"
+      >
+        <Calculator size={22} />
+        Calcular Insulina
+      </motion.button>
+
+      <InsulinCalcDialog
+        open={calcOpen}
+        onOpenChange={setCalcOpen}
+        initialCarbs={calcInitialCarbs}
+      />
     </div>
   );
 };
