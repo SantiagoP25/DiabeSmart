@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          debut_date: string | null
+          diabetes_type: string | null
+          display_name: string | null
+          glucose_max: number | null
+          glucose_min: number | null
+          height: number | null
+          id: string
+          insulin_ratio: number | null
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          debut_date?: string | null
+          diabetes_type?: string | null
+          display_name?: string | null
+          glucose_max?: number | null
+          glucose_min?: number | null
+          height?: number | null
+          id?: string
+          insulin_ratio?: number | null
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          debut_date?: string | null
+          diabetes_type?: string | null
+          display_name?: string | null
+          glucose_max?: number | null
+          glucose_min?: number | null
+          height?: number | null
+          id?: string
+          insulin_ratio?: number | null
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
