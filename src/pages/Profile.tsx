@@ -229,7 +229,7 @@ const Profile = () => {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="mt-10 flex flex-col items-center gap-4">
         <img src={logo} alt="DiabeSmart" className="w-12 h-12 opacity-60 dark:brightness-150 dark:contrast-125" />
         <p className="text-sm text-muted-foreground">DiabeSmart v1.0</p>
-        <button className="flex items-center gap-2 text-status-warning font-semibold text-base soft-press py-2 px-4 rounded-button">
+        <button onClick={signOut} className="flex items-center gap-2 text-status-warning font-semibold text-base soft-press py-2 px-4 rounded-button">
           <LogOut size={18} /> Cerrar sesión
         </button>
       </motion.div>
