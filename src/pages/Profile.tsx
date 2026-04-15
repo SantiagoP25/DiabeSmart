@@ -4,16 +4,9 @@ import { User, Heart, Pill, Phone, Settings, ChevronRight, LogOut, Check, Syring
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo.png";
-
-interface HealthProfile {
-  weight: string;
-  height: string;
-  diabetesType: string;
-  debutDate: string;
-  rangeMin: string;
-  rangeMax: string;
-}
 
 interface EmergencyContact {
   name: string;
@@ -21,16 +14,8 @@ interface EmergencyContact {
   relation: string;
 }
 
-const PROFILE_KEY = "diabesmart_health_profile";
 const CONTACTS_KEY = "diabesmart_emergency_contacts";
 const RECORDS_KEY = "diabesmart_records";
-
-const getProfile = (): HealthProfile => {
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    return raw ? JSON.parse(raw) : { weight: "68", height: "170", diabetesType: "Tipo 2", debutDate: "", rangeMin: "70", rangeMax: "180" };
-  } catch { return { weight: "68", height: "170", diabetesType: "Tipo 2", debutDate: "", rangeMin: "70", rangeMax: "180" }; }
-};
 
 const getContacts = (): EmergencyContact[] => {
   try {
@@ -50,9 +35,18 @@ const getAverage = (): number | null => {
 };
 
 const Profile = () => {
+  const { profile: dbProfile, updateProfile, loading: profileLoading } = useProfile();
+  const { signOut } = useAuth();
   const [editingRatio, setEditingRatio] = useState(false);
   const [ratio, setRatio] = useState("");
-  const [profile, setProfile] = useState<HealthProfile>(getProfile());
+  const [localProfile, setLocalProfile] = useState({
+    weight: "",
+    height: "",
+    diabetesType: "Tipo 1",
+    debutDate: "",
+    rangeMin: "70",
+    rangeMax: "180",
+  });
   const [contacts, setContacts] = useState<EmergencyContact[]>(getContacts());
   const [healthOpen, setHealthOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
@@ -60,23 +54,39 @@ const Profile = () => {
   const average = getAverage();
 
   useEffect(() => {
-    const saved = localStorage.getItem("diabesmart_ratio");
-    if (saved) setRatio(saved);
-  }, []);
+    if (dbProfile) {
+      setRatio(dbProfile.insulin_ratio?.toString() || "");
+      setLocalProfile({
+        weight: dbProfile.weight?.toString() || "",
+        height: dbProfile.height?.toString() || "",
+        diabetesType: dbProfile.diabetes_type || "Tipo 1",
+        debutDate: dbProfile.debut_date || "",
+        rangeMin: dbProfile.glucose_min?.toString() || "70",
+        rangeMax: dbProfile.glucose_max?.toString() || "180",
+      });
+    }
+  }, [dbProfile]);
 
-  const handleSaveRatio = () => {
+  const handleSaveRatio = async () => {
     const val = parseFloat(ratio);
     if (!val || val <= 0) {
       toast({ title: "Error", description: "Ingresa un ratio válido (ej: 10)" });
       return;
     }
-    localStorage.setItem("diabesmart_ratio", ratio);
+    await updateProfile({ insulin_ratio: val });
     setEditingRatio(false);
     toast({ title: "✅ Ratio guardado", description: `Tu ratio es 1:${val}` });
   };
 
-  const handleSaveProfile = () => {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  const handleSaveProfile = async () => {
+    await updateProfile({
+      weight: localProfile.weight ? parseFloat(localProfile.weight) : null,
+      height: localProfile.height ? parseFloat(localProfile.height) : null,
+      diabetes_type: localProfile.diabetesType,
+      debut_date: localProfile.debutDate || null,
+      glucose_min: parseFloat(localProfile.rangeMin) || 70,
+      glucose_max: parseFloat(localProfile.rangeMax) || 180,
+    });
     setHealthOpen(false);
     toast({ title: "✅ Datos guardados" });
   };
@@ -99,7 +109,7 @@ const Profile = () => {
     localStorage.setItem(CONTACTS_KEY, JSON.stringify(updated));
   };
 
-  const savedRatio = localStorage.getItem("diabesmart_ratio");
+  const savedRatio = dbProfile?.insulin_ratio?.toString() || "";
 
   return (
     <div className="min-h-screen pb-28 px-5 pt-6 max-w-md mx-auto">
@@ -113,8 +123,8 @@ const Profile = () => {
           <User size={36} className="text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">Oscar Aldana</h2>
-          <p className="text-base text-muted-foreground">{profile.weight} kg · {profile.diabetesType}</p>
+          <h2 className="text-xl font-bold text-foreground">{dbProfile?.display_name || "Usuario"}</h2>
+          <p className="text-base text-muted-foreground">{localProfile.weight} kg · {localProfile.diabetesType}</p>
           <p className="text-sm text-primary font-semibold mt-1">Perfil completo ✓</p>
         </div>
       </motion.div>
@@ -122,8 +132,8 @@ const Profile = () => {
       {/* Health Summary */}
       <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="grid grid-cols-3 gap-3 mb-8">
         {[
-          { label: "Peso", value: `${profile.weight} kg` },
-          { label: "Estatura", value: `${profile.height} cm` },
+          { label: "Peso", value: `${localProfile.weight} kg` },
+          { label: "Estatura", value: `${localProfile.height} cm` },
           { label: "Promedio", value: average ? `${average}` : "—" },
         ].map((stat) => (
           <div key={stat.label} className="glass-card rounded-inner p-4 text-center">
@@ -174,7 +184,7 @@ const Profile = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold text-foreground">Datos de salud</p>
-            <p className="text-sm text-muted-foreground">{profile.diabetesType}, {profile.weight}kg, rango {profile.rangeMin}-{profile.rangeMax}</p>
+            <p className="text-sm text-muted-foreground">{localProfile.diabetesType}, {localProfile.weight}kg, rango {localProfile.rangeMin}-{localProfile.rangeMax}</p>
           </div>
           <ChevronRight size={20} className="text-muted-foreground shrink-0" />
         </motion.button>
@@ -219,7 +229,7 @@ const Profile = () => {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="mt-10 flex flex-col items-center gap-4">
         <img src={logo} alt="DiabeSmart" className="w-12 h-12 opacity-60 dark:brightness-150 dark:contrast-125" />
         <p className="text-sm text-muted-foreground">DiabeSmart v1.0</p>
-        <button className="flex items-center gap-2 text-status-warning font-semibold text-base soft-press py-2 px-4 rounded-button">
+        <button onClick={signOut} className="flex items-center gap-2 text-status-warning font-semibold text-base soft-press py-2 px-4 rounded-button">
           <LogOut size={18} /> Cerrar sesión
         </button>
       </motion.div>
@@ -233,18 +243,18 @@ const Profile = () => {
           <div className="space-y-4 mt-2">
             <div>
               <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-1"><Weight size={16} /> Peso (kg)</label>
-              <Input type="number" value={profile.weight} onChange={(e) => setProfile({ ...profile, weight: e.target.value })} className="h-12 rounded-inner text-lg" />
+              <Input type="number" value={localProfile.weight} onChange={(e) => setLocalProfile({ ...localProfile, weight: e.target.value })} className="h-12 rounded-inner text-lg" />
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-1"><Ruler size={16} /> Estatura (cm)</label>
-              <Input type="number" value={profile.height} onChange={(e) => setProfile({ ...profile, height: e.target.value })} className="h-12 rounded-inner text-lg" />
+              <Input type="number" value={localProfile.height} onChange={(e) => setLocalProfile({ ...localProfile, height: e.target.value })} className="h-12 rounded-inner text-lg" />
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-1"><Activity size={16} /> Tipo de diabetes</label>
               <div className="grid grid-cols-3 gap-2">
                 {["Tipo 1", "Tipo 2", "Gestacional"].map((t) => (
-                  <button key={t} onClick={() => setProfile({ ...profile, diabetesType: t })}
-                    className={`py-3 rounded-inner text-sm font-semibold transition-colors ${profile.diabetesType === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                  <button key={t} onClick={() => setLocalProfile({ ...localProfile, diabetesType: t })}
+                    className={`py-3 rounded-inner text-sm font-semibold transition-colors ${localProfile.diabetesType === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
                     {t}
                   </button>
                 ))}
@@ -252,14 +262,14 @@ const Profile = () => {
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-1"><Calendar size={16} /> Fecha de debut</label>
-              <Input type="date" value={profile.debutDate} onChange={(e) => setProfile({ ...profile, debutDate: e.target.value })} className="h-12 rounded-inner text-lg" />
+              <Input type="date" value={localProfile.debutDate} onChange={(e) => setLocalProfile({ ...localProfile, debutDate: e.target.value })} className="h-12 rounded-inner text-lg" />
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground mb-1 block">Rango objetivo de glucosa (mg/dL)</label>
               <div className="flex gap-2 items-center">
-                <Input type="number" placeholder="Mín" value={profile.rangeMin} onChange={(e) => setProfile({ ...profile, rangeMin: e.target.value })} className="h-12 rounded-inner text-lg flex-1" />
+                <Input type="number" placeholder="Mín" value={localProfile.rangeMin} onChange={(e) => setLocalProfile({ ...localProfile, rangeMin: e.target.value })} className="h-12 rounded-inner text-lg flex-1" />
                 <span className="text-muted-foreground font-bold">—</span>
-                <Input type="number" placeholder="Máx" value={profile.rangeMax} onChange={(e) => setProfile({ ...profile, rangeMax: e.target.value })} className="h-12 rounded-inner text-lg flex-1" />
+                <Input type="number" placeholder="Máx" value={localProfile.rangeMax} onChange={(e) => setLocalProfile({ ...localProfile, rangeMax: e.target.value })} className="h-12 rounded-inner text-lg flex-1" />
               </div>
             </div>
             <button onClick={handleSaveProfile} className="w-full py-3 bg-primary text-primary-foreground rounded-inner font-semibold text-lg">

@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 import BottomNav from "@/components/BottomNav";
 import Dashboard from "./pages/Dashboard";
 import FoodLog from "./pages/FoodLog";
@@ -12,14 +14,17 @@ import Alerts from "./pages/Alerts";
 import Profile from "./pages/Profile";
 import InsulinCalculator from "./pages/InsulinCalculator";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoutes = () => {
   const { session, loading } = useAuth();
+  const { profile, loading: profileLoading, isProfileComplete, refetch } = useProfile();
+  const [onboardingDone, setOnboardingDone] = useState(false);
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -29,6 +34,10 @@ const ProtectedRoutes = () => {
 
   if (!session) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (!isProfileComplete && !onboardingDone) {
+    return <Onboarding onComplete={() => { setOnboardingDone(true); refetch(); }} />;
   }
 
   return (

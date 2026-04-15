@@ -5,6 +5,7 @@ import GlucoseCircle from "@/components/GlucoseCircle";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import GlucoseEntryDialog from "@/components/GlucoseEntryDialog";
 import InsulinCalcDialog from "@/components/InsulinCalcDialog";
+import { useProfile } from "@/hooks/useProfile";
 import logo from "@/assets/logo.png";
 
 interface GlucoseEntry {
@@ -20,8 +21,16 @@ const Dashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
   const [lastEntry, setLastEntry] = useState<GlucoseEntry | null>(null);
+  const { profile } = useProfile();
 
   const currentGlucose = lastEntry?.glucose ?? 104;
+  const userName = profile?.display_name || "Usuario";
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Buenos días";
+    if (h < 18) return "Buenas tardes";
+    return "Buenas noches";
+  };
 
   const handleSaveEntry = (entry: GlucoseEntry) => {
     setLastEntry(entry);
@@ -56,8 +65,8 @@ const Dashboard = () => {
       >
         <img src={logo} alt="DiabeSmart" className="w-11 h-11 rounded-full dark:brightness-150 dark:contrast-125" />
         <div className="flex-1">
-          <p className="text-base text-muted-foreground font-medium">Buenos días</p>
-          <h1 className="text-2xl font-bold text-foreground">Oscar Aldana</h1>
+          <p className="text-base text-muted-foreground font-medium">{greeting()}</p>
+          <h1 className="text-2xl font-bold text-foreground">{userName}</h1>
         </div>
         <DarkModeToggle />
       </motion.div>
