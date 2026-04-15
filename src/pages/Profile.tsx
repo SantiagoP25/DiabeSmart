@@ -109,7 +109,7 @@ const Profile = () => {
     localStorage.setItem(CONTACTS_KEY, JSON.stringify(updated));
   };
 
-  const savedRatio = localStorage.getItem("diabesmart_ratio");
+  const savedRatio = dbProfile?.insulin_ratio?.toString() || "";
 
   return (
     <div className="min-h-screen pb-28 px-5 pt-6 max-w-md mx-auto">
@@ -123,8 +123,8 @@ const Profile = () => {
           <User size={36} className="text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">Oscar Aldana</h2>
-          <p className="text-base text-muted-foreground">{profile.weight} kg · {profile.diabetesType}</p>
+          <h2 className="text-xl font-bold text-foreground">{dbProfile?.display_name || "Usuario"}</h2>
+          <p className="text-base text-muted-foreground">{localProfile.weight} kg · {localProfile.diabetesType}</p>
           <p className="text-sm text-primary font-semibold mt-1">Perfil completo ✓</p>
         </div>
       </motion.div>
@@ -132,8 +132,8 @@ const Profile = () => {
       {/* Health Summary */}
       <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="grid grid-cols-3 gap-3 mb-8">
         {[
-          { label: "Peso", value: `${profile.weight} kg` },
-          { label: "Estatura", value: `${profile.height} cm` },
+          { label: "Peso", value: `${localProfile.weight} kg` },
+          { label: "Estatura", value: `${localProfile.height} cm` },
           { label: "Promedio", value: average ? `${average}` : "—" },
         ].map((stat) => (
           <div key={stat.label} className="glass-card rounded-inner p-4 text-center">
@@ -184,7 +184,7 @@ const Profile = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold text-foreground">Datos de salud</p>
-            <p className="text-sm text-muted-foreground">{profile.diabetesType}, {profile.weight}kg, rango {profile.rangeMin}-{profile.rangeMax}</p>
+            <p className="text-sm text-muted-foreground">{localProfile.diabetesType}, {localProfile.weight}kg, rango {localProfile.rangeMin}-{localProfile.rangeMax}</p>
           </div>
           <ChevronRight size={20} className="text-muted-foreground shrink-0" />
         </motion.button>
@@ -243,18 +243,18 @@ const Profile = () => {
           <div className="space-y-4 mt-2">
             <div>
               <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-1"><Weight size={16} /> Peso (kg)</label>
-              <Input type="number" value={profile.weight} onChange={(e) => setProfile({ ...profile, weight: e.target.value })} className="h-12 rounded-inner text-lg" />
+              <Input type="number" value={localProfile.weight} onChange={(e) => setLocalProfile({ ...localProfile, weight: e.target.value })} className="h-12 rounded-inner text-lg" />
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-1"><Ruler size={16} /> Estatura (cm)</label>
-              <Input type="number" value={profile.height} onChange={(e) => setProfile({ ...profile, height: e.target.value })} className="h-12 rounded-inner text-lg" />
+              <Input type="number" value={localProfile.height} onChange={(e) => setLocalProfile({ ...localProfile, height: e.target.value })} className="h-12 rounded-inner text-lg" />
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-1"><Activity size={16} /> Tipo de diabetes</label>
               <div className="grid grid-cols-3 gap-2">
                 {["Tipo 1", "Tipo 2", "Gestacional"].map((t) => (
-                  <button key={t} onClick={() => setProfile({ ...profile, diabetesType: t })}
-                    className={`py-3 rounded-inner text-sm font-semibold transition-colors ${profile.diabetesType === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                  <button key={t} onClick={() => setLocalProfile({ ...localProfile, diabetesType: t })}
+                    className={`py-3 rounded-inner text-sm font-semibold transition-colors ${localProfile.diabetesType === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
                     {t}
                   </button>
                 ))}
@@ -262,14 +262,14 @@ const Profile = () => {
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-1"><Calendar size={16} /> Fecha de debut</label>
-              <Input type="date" value={profile.debutDate} onChange={(e) => setProfile({ ...profile, debutDate: e.target.value })} className="h-12 rounded-inner text-lg" />
+              <Input type="date" value={localProfile.debutDate} onChange={(e) => setLocalProfile({ ...localProfile, debutDate: e.target.value })} className="h-12 rounded-inner text-lg" />
             </div>
             <div>
               <label className="text-sm font-semibold text-foreground mb-1 block">Rango objetivo de glucosa (mg/dL)</label>
               <div className="flex gap-2 items-center">
-                <Input type="number" placeholder="Mín" value={profile.rangeMin} onChange={(e) => setProfile({ ...profile, rangeMin: e.target.value })} className="h-12 rounded-inner text-lg flex-1" />
+                <Input type="number" placeholder="Mín" value={localProfile.rangeMin} onChange={(e) => setLocalProfile({ ...localProfile, rangeMin: e.target.value })} className="h-12 rounded-inner text-lg flex-1" />
                 <span className="text-muted-foreground font-bold">—</span>
-                <Input type="number" placeholder="Máx" value={profile.rangeMax} onChange={(e) => setProfile({ ...profile, rangeMax: e.target.value })} className="h-12 rounded-inner text-lg flex-1" />
+                <Input type="number" placeholder="Máx" value={localProfile.rangeMax} onChange={(e) => setLocalProfile({ ...localProfile, rangeMax: e.target.value })} className="h-12 rounded-inner text-lg flex-1" />
               </div>
             </div>
             <button onClick={handleSaveProfile} className="w-full py-3 bg-primary text-primary-foreground rounded-inner font-semibold text-lg">
