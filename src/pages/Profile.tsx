@@ -4,16 +4,9 @@ import { User, Heart, Pill, Phone, Settings, ChevronRight, LogOut, Check, Syring
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo.png";
-
-interface HealthProfile {
-  weight: string;
-  height: string;
-  diabetesType: string;
-  debutDate: string;
-  rangeMin: string;
-  rangeMax: string;
-}
 
 interface EmergencyContact {
   name: string;
@@ -21,16 +14,8 @@ interface EmergencyContact {
   relation: string;
 }
 
-const PROFILE_KEY = "diabesmart_health_profile";
 const CONTACTS_KEY = "diabesmart_emergency_contacts";
 const RECORDS_KEY = "diabesmart_records";
-
-const getProfile = (): HealthProfile => {
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    return raw ? JSON.parse(raw) : { weight: "68", height: "170", diabetesType: "Tipo 2", debutDate: "", rangeMin: "70", rangeMax: "180" };
-  } catch { return { weight: "68", height: "170", diabetesType: "Tipo 2", debutDate: "", rangeMin: "70", rangeMax: "180" }; }
-};
 
 const getContacts = (): EmergencyContact[] => {
   try {
@@ -50,9 +35,18 @@ const getAverage = (): number | null => {
 };
 
 const Profile = () => {
+  const { profile: dbProfile, updateProfile, loading: profileLoading } = useProfile();
+  const { signOut } = useAuth();
   const [editingRatio, setEditingRatio] = useState(false);
   const [ratio, setRatio] = useState("");
-  const [profile, setProfile] = useState<HealthProfile>(getProfile());
+  const [localProfile, setLocalProfile] = useState({
+    weight: "",
+    height: "",
+    diabetesType: "Tipo 1",
+    debutDate: "",
+    rangeMin: "70",
+    rangeMax: "180",
+  });
   const [contacts, setContacts] = useState<EmergencyContact[]>(getContacts());
   const [healthOpen, setHealthOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
@@ -60,23 +54,39 @@ const Profile = () => {
   const average = getAverage();
 
   useEffect(() => {
-    const saved = localStorage.getItem("diabesmart_ratio");
-    if (saved) setRatio(saved);
-  }, []);
+    if (dbProfile) {
+      setRatio(dbProfile.insulin_ratio?.toString() || "");
+      setLocalProfile({
+        weight: dbProfile.weight?.toString() || "",
+        height: dbProfile.height?.toString() || "",
+        diabetesType: dbProfile.diabetes_type || "Tipo 1",
+        debutDate: dbProfile.debut_date || "",
+        rangeMin: dbProfile.glucose_min?.toString() || "70",
+        rangeMax: dbProfile.glucose_max?.toString() || "180",
+      });
+    }
+  }, [dbProfile]);
 
-  const handleSaveRatio = () => {
+  const handleSaveRatio = async () => {
     const val = parseFloat(ratio);
     if (!val || val <= 0) {
       toast({ title: "Error", description: "Ingresa un ratio válido (ej: 10)" });
       return;
     }
-    localStorage.setItem("diabesmart_ratio", ratio);
+    await updateProfile({ insulin_ratio: val });
     setEditingRatio(false);
     toast({ title: "✅ Ratio guardado", description: `Tu ratio es 1:${val}` });
   };
 
-  const handleSaveProfile = () => {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  const handleSaveProfile = async () => {
+    await updateProfile({
+      weight: localProfile.weight ? parseFloat(localProfile.weight) : null,
+      height: localProfile.height ? parseFloat(localProfile.height) : null,
+      diabetes_type: localProfile.diabetesType,
+      debut_date: localProfile.debutDate || null,
+      glucose_min: parseFloat(localProfile.rangeMin) || 70,
+      glucose_max: parseFloat(localProfile.rangeMax) || 180,
+    });
     setHealthOpen(false);
     toast({ title: "✅ Datos guardados" });
   };
