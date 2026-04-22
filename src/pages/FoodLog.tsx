@@ -264,9 +264,10 @@ const FoodLog = () => {
                               </p>
                             </div>
                             <button
-                              onClick={() => handleCalcFromFood(item)}
-                              className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center"
-                              title="Calcular insulina"
+                              onClick={() => addToCart(item)}
+                              disabled={carbG === "-"}
+                              className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center disabled:opacity-30"
+                              title="Agregar a la comida"
                             >
                               <Plus size={14} className="text-primary" />
                             </button>
