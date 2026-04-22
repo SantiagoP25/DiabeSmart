@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, ChevronDown, Milk, Wheat, Apple, Carrot, Nut, GlassWater, UtensilsCrossed, Plus, Calculator } from "lucide-react";
+import { Search, Sparkles, ChevronDown, Milk, Wheat, Apple, Carrot, Nut, GlassWater, UtensilsCrossed, Plus, Calculator, X, ShoppingBasket, Trash2 } from "lucide-react";
 import { carbsDatabase, foodCategories, type FoodItem, type FoodCategory } from "@/data/carbsDatabase";
 import InsulinCalcDialog from "@/components/InsulinCalcDialog";
 
