@@ -43,6 +43,8 @@ const FoodLog = () => {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [calcOpen, setCalcOpen] = useState(false);
   const [calcInitialCarbs, setCalcInitialCarbs] = useState<number>(0);
+  const [cart, setCart] = useState<{ name: string; carbs: number; servings: number }[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let items = carbsDatabase;
@@ -68,6 +70,40 @@ const FoodLog = () => {
   const handleCalcFromFood = (item: FoodItem) => {
     const carbs = parseFloat(getCarbGrams(item));
     setCalcInitialCarbs(isNaN(carbs) ? 0 : carbs);
+    setCalcOpen(true);
+  };
+
+  const addToCart = (item: FoodItem) => {
+    const carbs = parseFloat(getCarbGrams(item));
+    if (isNaN(carbs)) return;
+    setCart((prev) => {
+      const existing = prev.find((p) => p.name === item.name);
+      if (existing) {
+        return prev.map((p) => p.name === item.name ? { ...p, servings: p.servings + 1 } : p);
+      }
+      return [...prev, { name: item.name, carbs, servings: 1 }];
+    });
+  };
+
+  const updateServings = (name: string, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((p) => p.name === name ? { ...p, servings: p.servings + delta } : p)
+        .filter((p) => p.servings > 0)
+    );
+  };
+
+  const removeFromCart = (name: string) => {
+    setCart((prev) => prev.filter((p) => p.name !== name));
+  };
+
+  const totalCarbs = cart.reduce((s, p) => s + p.carbs * p.servings, 0);
+  const cartItemCount = cart.reduce((s, p) => s + p.servings, 0);
+
+  const handleCalcFromCart = () => {
+    if (cart.length === 0) return;
+    setCalcInitialCarbs(Math.round(totalCarbs));
+    setCartOpen(false);
     setCalcOpen(true);
   };
 
