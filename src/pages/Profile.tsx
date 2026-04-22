@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Heart, Pill, Phone, Settings, ChevronRight, LogOut, Check, Syringe, Plus, Trash2, Calendar, Weight, Ruler, Activity } from "lucide-react";
+import { User, Heart, Pill, Phone, Settings, ChevronRight, LogOut, Check, Syringe, Plus, Trash2, Calendar, Weight, Ruler, Activity, Bell, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,8 +14,22 @@ interface EmergencyContact {
   relation: string;
 }
 
+interface Medication {
+  name: string;
+  dose: string;
+  frequency: string;
+}
+
+interface AppSettings {
+  notifications: boolean;
+  language: string;
+  soundAlerts: boolean;
+}
+
 const CONTACTS_KEY = "diabesmart_emergency_contacts";
 const RECORDS_KEY = "diabesmart_records";
+const MEDS_KEY = "diabesmart_medications";
+const SETTINGS_KEY = "diabesmart_settings";
 
 const getContacts = (): EmergencyContact[] => {
   try {
@@ -50,8 +64,45 @@ const Profile = () => {
   const [contacts, setContacts] = useState<EmergencyContact[]>(getContacts());
   const [healthOpen, setHealthOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const [medsOpen, setMedsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [newContact, setNewContact] = useState<EmergencyContact>({ name: "", phone: "", relation: "" });
+  const [medications, setMedications] = useState<Medication[]>(() => {
+    try { return JSON.parse(localStorage.getItem(MEDS_KEY) || "[]"); } catch { return []; }
+  });
+  const [newMed, setNewMed] = useState<Medication>({ name: "", dose: "", frequency: "" });
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      return raw ? JSON.parse(raw) : { notifications: true, language: "es", soundAlerts: true };
+    } catch { return { notifications: true, language: "es", soundAlerts: true }; }
+  });
   const average = getAverage();
+
+  const saveMedications = (next: Medication[]) => {
+    setMedications(next);
+    localStorage.setItem(MEDS_KEY, JSON.stringify(next));
+  };
+
+  const handleAddMed = () => {
+    if (!newMed.name.trim() || !newMed.dose.trim()) {
+      toast({ title: "Error", description: "Nombre y dosis son requeridos" });
+      return;
+    }
+    saveMedications([...medications, newMed]);
+    setNewMed({ name: "", dose: "", frequency: "" });
+    toast({ title: "✅ Medicamento agregado" });
+  };
+
+  const handleDeleteMed = (i: number) => {
+    saveMedications(medications.filter((_, idx) => idx !== i));
+  };
+
+  const updateSettings = (patch: Partial<AppSettings>) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+  };
 
   useEffect(() => {
     if (dbProfile) {
@@ -204,25 +255,35 @@ const Profile = () => {
           <ChevronRight size={20} className="text-muted-foreground shrink-0" />
         </motion.button>
 
-        {[
-          { icon: Pill, label: "Medicamentos", desc: "Insulina, metformina" },
-          { icon: Settings, label: "Configuración", desc: "Notificaciones, idioma" },
-        ].map((item, i) => (
-          <motion.button
-            key={item.label}
-            initial={{ x: -15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.46 + i * 0.08 }}
-            className="w-full glass-card rounded-inner p-4 flex items-center gap-4 soft-press text-left"
-          >
-            <div className="w-11 h-11 rounded-button bg-primary/10 flex items-center justify-center shrink-0">
-              <item.icon size={22} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-base font-semibold text-foreground">{item.label}</p>
-              <p className="text-sm text-muted-foreground">{item.desc}</p>
-            </div>
-            <ChevronRight size={20} className="text-muted-foreground shrink-0" />
-          </motion.button>
-        ))}
+        <motion.button
+          initial={{ x: -15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.46 }}
+          onClick={() => setMedsOpen(true)}
+          className="w-full glass-card rounded-inner p-4 flex items-center gap-4 soft-press text-left"
+        >
+          <div className="w-11 h-11 rounded-button bg-primary/10 flex items-center justify-center shrink-0">
+            <Pill size={22} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-semibold text-foreground">Medicamentos</p>
+            <p className="text-sm text-muted-foreground">{medications.length > 0 ? `${medications.length} medicamento(s)` : "Sin medicamentos"}</p>
+          </div>
+          <ChevronRight size={20} className="text-muted-foreground shrink-0" />
+        </motion.button>
+
+        <motion.button
+          initial={{ x: -15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.54 }}
+          onClick={() => setSettingsOpen(true)}
+          className="w-full glass-card rounded-inner p-4 flex items-center gap-4 soft-press text-left"
+        >
+          <div className="w-11 h-11 rounded-button bg-primary/10 flex items-center justify-center shrink-0">
+            <Settings size={22} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-semibold text-foreground">Configuración</p>
+            <p className="text-sm text-muted-foreground">Notificaciones, idioma</p>
+          </div>
+          <ChevronRight size={20} className="text-muted-foreground shrink-0" />
+        </motion.button>
       </div>
 
       {/* Logo + Logout */}
@@ -309,6 +370,107 @@ const Profile = () => {
                 <Plus size={18} /> Agregar
               </button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Medications Dialog */}
+      <Dialog open={medsOpen} onOpenChange={setMedsOpen}>
+        <DialogContent className="max-w-sm mx-auto rounded-outer">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Pill size={20} className="text-primary" /> Medicamentos
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto">
+            {medications.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">Sin medicamentos. Agrega uno abajo.</p>
+            )}
+            {medications.map((m, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-inner bg-muted/50">
+                <div className="w-10 h-10 rounded-button bg-primary/15 flex items-center justify-center shrink-0">
+                  <Pill size={18} className="text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-semibold text-foreground truncate">{m.name}</p>
+                  <p className="text-xs text-muted-foreground">{m.dose}{m.frequency ? ` · ${m.frequency}` : ""}</p>
+                </div>
+                <button onClick={() => handleDeleteMed(i)} className="p-2 rounded-full hover:bg-destructive/10">
+                  <Trash2 size={16} className="text-muted-foreground" />
+                </button>
+              </div>
+            ))}
+            <div className="border-t border-border pt-4 space-y-3">
+              <p className="text-sm font-semibold text-foreground">Agregar medicamento</p>
+              <Input placeholder="Nombre (ej: Metformina)" value={newMed.name} onChange={(e) => setNewMed({ ...newMed, name: e.target.value })} className="h-11 rounded-inner" />
+              <Input placeholder="Dosis (ej: 500 mg)" value={newMed.dose} onChange={(e) => setNewMed({ ...newMed, dose: e.target.value })} className="h-11 rounded-inner" />
+              <Input placeholder="Frecuencia (ej: 2 veces al día)" value={newMed.frequency} onChange={(e) => setNewMed({ ...newMed, frequency: e.target.value })} className="h-11 rounded-inner" />
+              <button onClick={handleAddMed} className="w-full py-3 bg-primary text-primary-foreground rounded-inner font-semibold flex items-center justify-center gap-2">
+                <Plus size={18} /> Agregar
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-w-sm mx-auto rounded-outer">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Settings size={20} className="text-primary" /> Configuración
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="flex items-center gap-3 p-3 rounded-inner bg-muted/40">
+              <Bell size={20} className="text-primary shrink-0" />
+              <div className="flex-1">
+                <p className="text-base font-semibold text-foreground">Notificaciones</p>
+                <p className="text-xs text-muted-foreground">Recibir recordatorios y alertas</p>
+              </div>
+              <button
+                onClick={() => updateSettings({ notifications: !settings.notifications })}
+                className={`w-11 h-6 rounded-full p-0.5 transition-colors ${settings.notifications ? "bg-primary" : "bg-muted"}`}
+              >
+                <div className={`w-5 h-5 rounded-full bg-background transition-transform ${settings.notifications ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-inner bg-muted/40">
+              <Bell size={20} className="text-primary shrink-0" />
+              <div className="flex-1">
+                <p className="text-base font-semibold text-foreground">Sonido de alertas</p>
+                <p className="text-xs text-muted-foreground">Reproducir sonido en alertas críticas</p>
+              </div>
+              <button
+                onClick={() => updateSettings({ soundAlerts: !settings.soundAlerts })}
+                className={`w-11 h-6 rounded-full p-0.5 transition-colors ${settings.soundAlerts ? "bg-primary" : "bg-muted"}`}
+              >
+                <div className={`w-5 h-5 rounded-full bg-background transition-transform ${settings.soundAlerts ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-inner bg-muted/40">
+              <div className="flex items-center gap-3 mb-3">
+                <Globe size={20} className="text-primary shrink-0" />
+                <p className="text-base font-semibold text-foreground">Idioma</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[{ k: "es", l: "Español" }, { k: "en", l: "English" }].map((lang) => (
+                  <button
+                    key={lang.k}
+                    onClick={() => updateSettings({ language: lang.k })}
+                    className={`py-2.5 rounded-inner text-sm font-semibold transition-colors ${settings.language === lang.k ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
+                  >
+                    {lang.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center pt-2">
+              Tus preferencias se guardan automáticamente.
+            </p>
           </div>
         </DialogContent>
       </Dialog>
