@@ -321,22 +321,72 @@ const FoodLog = () => {
         </div>
       </motion.div>
 
-      {/* Floating Calculate Button */}
+      {/* Cart summary */}
+      {cart.length > 0 && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="mt-6 glass-card rounded-outer p-5 border-2 border-primary/20"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <ShoppingBasket size={20} className="text-primary" />
+            <h3 className="text-base font-bold text-foreground">Mi comida ({cartItemCount})</h3>
+            <button
+              onClick={() => setCart([])}
+              className="ml-auto text-xs text-muted-foreground hover:text-destructive flex items-center gap-1"
+            >
+              <Trash2 size={12} /> Limpiar
+            </button>
+          </div>
+          <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+            {cart.map((it) => (
+              <div key={it.name} className="flex items-center gap-2 text-sm">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground truncate">{it.name}</p>
+                  <p className="text-xs text-muted-foreground">{(it.carbs * it.servings).toFixed(0)}g HC</p>
+                </div>
+                <div className="flex items-center gap-1.5 bg-muted/60 rounded-full px-1">
+                  <button onClick={() => updateServings(it.name, -1)} className="w-6 h-6 flex items-center justify-center text-foreground font-bold">−</button>
+                  <span className="text-sm font-bold text-foreground w-5 text-center tabular-nums">{it.servings}</span>
+                  <button onClick={() => updateServings(it.name, 1)} className="w-6 h-6 flex items-center justify-center text-foreground font-bold">+</button>
+                </div>
+                <button onClick={() => removeFromCart(it.name)} className="p-1 text-muted-foreground hover:text-destructive">
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-3 border-t border-border mb-3">
+            <span className="text-sm font-semibold text-muted-foreground">Total carbohidratos</span>
+            <span className="text-2xl font-black text-primary tabular-nums">{totalCarbs.toFixed(0)}g</span>
+          </div>
+          <button
+            onClick={handleCalcFromCart}
+            className="w-full bg-primary text-primary-foreground rounded-button py-4 text-lg font-bold soft-press flex items-center justify-center gap-2"
+          >
+            <Calculator size={20} />
+            Calcular Insulina
+          </button>
+        </motion.div>
+      )}
+
+      {/* Manual Calculate Button */}
       <motion.button
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.7 }}
         onClick={() => { setCalcInitialCarbs(0); setCalcOpen(true); }}
-        className="w-full mt-6 bg-primary text-primary-foreground rounded-button py-5 text-xl font-bold soft-press flex items-center justify-center gap-3"
+        className="w-full mt-4 bg-muted text-foreground rounded-button py-4 text-base font-bold soft-press flex items-center justify-center gap-3 border border-border"
       >
-        <Calculator size={22} />
-        Calcular Insulina
+        <Calculator size={20} />
+        Calcular manualmente
       </motion.button>
 
       <InsulinCalcDialog
         open={calcOpen}
-        onOpenChange={setCalcOpen}
+        onOpenChange={(v) => { setCalcOpen(v); if (!v) setCart([]); }}
         initialCarbs={calcInitialCarbs}
+        breakdown={cart.length > 0 ? cart.map(c => ({ name: `${c.name} ×${c.servings}`, carbs: Math.round(c.carbs * c.servings) })) : undefined}
       />
     </div>
   );
