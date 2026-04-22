@@ -373,6 +373,107 @@ const Profile = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Medications Dialog */}
+      <Dialog open={medsOpen} onOpenChange={setMedsOpen}>
+        <DialogContent className="max-w-sm mx-auto rounded-outer">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Pill size={20} className="text-primary" /> Medicamentos
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto">
+            {medications.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">Sin medicamentos. Agrega uno abajo.</p>
+            )}
+            {medications.map((m, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-inner bg-muted/50">
+                <div className="w-10 h-10 rounded-button bg-primary/15 flex items-center justify-center shrink-0">
+                  <Pill size={18} className="text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-semibold text-foreground truncate">{m.name}</p>
+                  <p className="text-xs text-muted-foreground">{m.dose}{m.frequency ? ` · ${m.frequency}` : ""}</p>
+                </div>
+                <button onClick={() => handleDeleteMed(i)} className="p-2 rounded-full hover:bg-destructive/10">
+                  <Trash2 size={16} className="text-muted-foreground" />
+                </button>
+              </div>
+            ))}
+            <div className="border-t border-border pt-4 space-y-3">
+              <p className="text-sm font-semibold text-foreground">Agregar medicamento</p>
+              <Input placeholder="Nombre (ej: Metformina)" value={newMed.name} onChange={(e) => setNewMed({ ...newMed, name: e.target.value })} className="h-11 rounded-inner" />
+              <Input placeholder="Dosis (ej: 500 mg)" value={newMed.dose} onChange={(e) => setNewMed({ ...newMed, dose: e.target.value })} className="h-11 rounded-inner" />
+              <Input placeholder="Frecuencia (ej: 2 veces al día)" value={newMed.frequency} onChange={(e) => setNewMed({ ...newMed, frequency: e.target.value })} className="h-11 rounded-inner" />
+              <button onClick={handleAddMed} className="w-full py-3 bg-primary text-primary-foreground rounded-inner font-semibold flex items-center justify-center gap-2">
+                <Plus size={18} /> Agregar
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-w-sm mx-auto rounded-outer">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Settings size={20} className="text-primary" /> Configuración
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="flex items-center gap-3 p-3 rounded-inner bg-muted/40">
+              <Bell size={20} className="text-primary shrink-0" />
+              <div className="flex-1">
+                <p className="text-base font-semibold text-foreground">Notificaciones</p>
+                <p className="text-xs text-muted-foreground">Recibir recordatorios y alertas</p>
+              </div>
+              <button
+                onClick={() => updateSettings({ notifications: !settings.notifications })}
+                className={`w-11 h-6 rounded-full p-0.5 transition-colors ${settings.notifications ? "bg-primary" : "bg-muted"}`}
+              >
+                <div className={`w-5 h-5 rounded-full bg-background transition-transform ${settings.notifications ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-inner bg-muted/40">
+              <Bell size={20} className="text-primary shrink-0" />
+              <div className="flex-1">
+                <p className="text-base font-semibold text-foreground">Sonido de alertas</p>
+                <p className="text-xs text-muted-foreground">Reproducir sonido en alertas críticas</p>
+              </div>
+              <button
+                onClick={() => updateSettings({ soundAlerts: !settings.soundAlerts })}
+                className={`w-11 h-6 rounded-full p-0.5 transition-colors ${settings.soundAlerts ? "bg-primary" : "bg-muted"}`}
+              >
+                <div className={`w-5 h-5 rounded-full bg-background transition-transform ${settings.soundAlerts ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-inner bg-muted/40">
+              <div className="flex items-center gap-3 mb-3">
+                <Globe size={20} className="text-primary shrink-0" />
+                <p className="text-base font-semibold text-foreground">Idioma</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[{ k: "es", l: "Español" }, { k: "en", l: "English" }].map((lang) => (
+                  <button
+                    key={lang.k}
+                    onClick={() => updateSettings({ language: lang.k })}
+                    className={`py-2.5 rounded-inner text-sm font-semibold transition-colors ${settings.language === lang.k ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
+                  >
+                    {lang.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center pt-2">
+              Tus preferencias se guardan automáticamente.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
