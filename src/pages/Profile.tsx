@@ -255,25 +255,35 @@ const Profile = () => {
           <ChevronRight size={20} className="text-muted-foreground shrink-0" />
         </motion.button>
 
-        {[
-          { icon: Pill, label: "Medicamentos", desc: "Insulina, metformina" },
-          { icon: Settings, label: "Configuración", desc: "Notificaciones, idioma" },
-        ].map((item, i) => (
-          <motion.button
-            key={item.label}
-            initial={{ x: -15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.46 + i * 0.08 }}
-            className="w-full glass-card rounded-inner p-4 flex items-center gap-4 soft-press text-left"
-          >
-            <div className="w-11 h-11 rounded-button bg-primary/10 flex items-center justify-center shrink-0">
-              <item.icon size={22} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-base font-semibold text-foreground">{item.label}</p>
-              <p className="text-sm text-muted-foreground">{item.desc}</p>
-            </div>
-            <ChevronRight size={20} className="text-muted-foreground shrink-0" />
-          </motion.button>
-        ))}
+        <motion.button
+          initial={{ x: -15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.46 }}
+          onClick={() => setMedsOpen(true)}
+          className="w-full glass-card rounded-inner p-4 flex items-center gap-4 soft-press text-left"
+        >
+          <div className="w-11 h-11 rounded-button bg-primary/10 flex items-center justify-center shrink-0">
+            <Pill size={22} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-semibold text-foreground">Medicamentos</p>
+            <p className="text-sm text-muted-foreground">{medications.length > 0 ? `${medications.length} medicamento(s)` : "Sin medicamentos"}</p>
+          </div>
+          <ChevronRight size={20} className="text-muted-foreground shrink-0" />
+        </motion.button>
+
+        <motion.button
+          initial={{ x: -15, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.54 }}
+          onClick={() => setSettingsOpen(true)}
+          className="w-full glass-card rounded-inner p-4 flex items-center gap-4 soft-press text-left"
+        >
+          <div className="w-11 h-11 rounded-button bg-primary/10 flex items-center justify-center shrink-0">
+            <Settings size={22} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-semibold text-foreground">Configuración</p>
+            <p className="text-sm text-muted-foreground">Notificaciones, idioma</p>
+          </div>
+          <ChevronRight size={20} className="text-muted-foreground shrink-0" />
+        </motion.button>
       </div>
 
       {/* Logo + Logout */}
