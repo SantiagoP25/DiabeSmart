@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sun, Coffee, Moon, Utensils, TrendingUp, Droplets, Syringe, Trash2 } from "lucide-react";
+import { Sun, Coffee, Moon, Utensils, TrendingUp, Droplets, Syringe, Trash2, PieChart as PieIcon, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 interface GlucoseRecord {
   glucose: number;
@@ -12,6 +13,7 @@ interface GlucoseRecord {
 }
 
 const STORAGE_KEY = "diabesmart_records";
+const PROFILE_KEY = "diabesmart_health_profile";
 
 const getRecords = (): GlucoseRecord[] => {
   try {
@@ -46,10 +48,48 @@ const statusBg: Record<string, string> = {
 
 const GlucoseTracking = () => {
   const [records, setRecords] = useState<GlucoseRecord[]>([]);
+  const [range, setRange] = useState<{ min: number; max: number }>({ min: 70, max: 180 });
 
   useEffect(() => {
     setRecords(getRecords());
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        setRange({
+          min: parseInt(p.rangeMin) || 70,
+          max: parseInt(p.rangeMax) || 180,
+        });
+      }
+    } catch { /* noop */ }
   }, []);
+
+  // Time in range stats
+  const inRange = records.filter(r => r.glucose >= range.min && r.glucose <= range.max).length;
+  const below = records.filter(r => r.glucose < range.min).length;
+  const above = records.filter(r => r.glucose > range.max).length;
+  const total = records.length;
+  const pctIn = total ? Math.round((inRange / total) * 100) : 0;
+  const pctBelow = total ? Math.round((below / total) * 100) : 0;
+  const pctAbove = total ? 100 - pctIn - pctBelow : 0;
+
+  const pieData = [
+    { name: "En rango", value: pctIn },
+    { name: "Sobre rango", value: pctAbove },
+    { name: "Bajo rango", value: pctBelow },
+  ].filter(d => d.value > 0);
+
+  const PIE_COLORS = ["hsl(145, 45%, 45%)", "hsl(30, 80%, 55%)", "hsl(0, 65%, 55%)"];
+
+  // Bar chart: last 7 days averages
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const key = format(d, "yyyy-MM-dd");
+    const dayRecs = records.filter(r => format(new Date(r.timestamp), "yyyy-MM-dd") === key);
+    const avg = dayRecs.length ? Math.round(dayRecs.reduce((s, r) => s + r.glucose, 0) / dayRecs.length) : 0;
+    return { day: format(d, "EEE", { locale: es }).slice(0, 3), promedio: avg };
+  });
 
   const handleDelete = (index: number) => {
     const updated = records.filter((_, i) => i !== index);
@@ -89,6 +129,82 @@ const GlucoseTracking = () => {
       <p className="text-sm text-muted-foreground mb-6">
         {records.length} registros guardados
       </p>
+
+      {records.length > 0 && (
+        <>
+          <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="glass-card rounded-outer p-5 mb-5">
+            <div className="flex items-center gap-2 mb-4">
+              <PieIcon size={20} className="text-primary" />
+              <h2 className="text-lg font-bold text-foreground">Tiempo en rango</h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-36 h-36 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={62} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                      {pieData.map((entry, i) => (
+                        <Cell key={i} fill={PIE_COLORS[entry.name === "En rango" ? 0 : entry.name === "Sobre rango" ? 1 : 2]} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-foreground tabular-nums">{pctIn}%</span>
+                  <span className="text-[10px] text-muted-foreground">en rango</span>
+                </div>
+              </div>
+              <div className="flex-1 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-status-good" />
+                  <span className="text-sm text-foreground font-medium">En rango</span>
+                  <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{pctIn}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-status-warning" />
+                  <span className="text-sm text-foreground font-medium">Sobre rango</span>
+                  <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{pctAbove}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-status-danger" />
+                  <span className="text-sm text-foreground font-medium">Bajo rango</span>
+                  <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{pctBelow}%</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground pt-1">Objetivo: {range.min}–{range.max} mg/dL</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="glass-card rounded-outer p-5 mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 size={20} className="text-primary" />
+              <h2 className="text-lg font-bold text-foreground">Promedio semanal</h2>
+            </div>
+            <div className="w-full h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={last7Days} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+                    formatter={(v: number) => [`${v} mg/dL`, "Promedio"]}
+                  />
+                  <Bar dataKey="promedio" radius={[8, 8, 0, 0]}>
+                    {last7Days.map((d, i) => (
+                      <Cell key={i} fill={
+                        d.promedio === 0 ? "hsl(var(--muted))" :
+                        d.promedio < range.min ? "hsl(0, 65%, 55%)" :
+                        d.promedio > range.max ? "hsl(30, 80%, 55%)" :
+                        "hsl(145, 45%, 45%)"
+                      } />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+        </>
+      )}
 
       {records.length === 0 ? (
         <motion.div

@@ -15,9 +15,10 @@ interface InsulinCalcDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialCarbs?: number;
+  breakdown?: { name: string; carbs: number }[];
 }
 
-const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs }: InsulinCalcDialogProps) => {
+const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: InsulinCalcDialogProps) => {
   const [carbs, setCarbs] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [ratio, setRatio] = useState(0);
@@ -88,6 +89,23 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs }: InsulinCalcDial
               </div>
             )}
           </div>
+
+          {/* Breakdown of foods */}
+          {breakdown && breakdown.length > 0 && (
+            <div className="glass-card rounded-inner p-4 space-y-1.5">
+              <p className="text-xs font-bold text-muted-foreground uppercase mb-2">Alimentos seleccionados</p>
+              {breakdown.map((b, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span className="text-foreground truncate pr-2">{b.name}</span>
+                  <span className="font-semibold text-primary tabular-nums shrink-0">{b.carbs}g</span>
+                </div>
+              ))}
+              <div className="flex justify-between pt-2 mt-2 border-t border-border text-sm font-bold">
+                <span className="text-foreground">Total HC</span>
+                <span className="text-primary tabular-nums">{breakdown.reduce((s, b) => s + b.carbs, 0)}g</span>
+              </div>
+            </div>
+          )}
 
           {/* Carbs Input */}
           <div className="space-y-2">
