@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sun, Coffee, Moon, Utensils, TrendingUp, Droplets, Syringe, Trash2 } from "lucide-react";
+import { Sun, Coffee, Moon, Utensils, TrendingUp, Droplets, Syringe, Trash2, PieChart as PieIcon, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 interface GlucoseRecord {
   glucose: number;
@@ -12,6 +13,7 @@ interface GlucoseRecord {
 }
 
 const STORAGE_KEY = "diabesmart_records";
+const PROFILE_KEY = "diabesmart_health_profile";
 
 const getRecords = (): GlucoseRecord[] => {
   try {
