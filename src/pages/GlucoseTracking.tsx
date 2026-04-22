@@ -48,10 +48,48 @@ const statusBg: Record<string, string> = {
 
 const GlucoseTracking = () => {
   const [records, setRecords] = useState<GlucoseRecord[]>([]);
+  const [range, setRange] = useState<{ min: number; max: number }>({ min: 70, max: 180 });
 
   useEffect(() => {
     setRecords(getRecords());
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        setRange({
+          min: parseInt(p.rangeMin) || 70,
+          max: parseInt(p.rangeMax) || 180,
+        });
+      }
+    } catch { /* noop */ }
   }, []);
+
+  // Time in range stats
+  const inRange = records.filter(r => r.glucose >= range.min && r.glucose <= range.max).length;
+  const below = records.filter(r => r.glucose < range.min).length;
+  const above = records.filter(r => r.glucose > range.max).length;
+  const total = records.length;
+  const pctIn = total ? Math.round((inRange / total) * 100) : 0;
+  const pctBelow = total ? Math.round((below / total) * 100) : 0;
+  const pctAbove = total ? 100 - pctIn - pctBelow : 0;
+
+  const pieData = [
+    { name: "En rango", value: pctIn },
+    { name: "Sobre rango", value: pctAbove },
+    { name: "Bajo rango", value: pctBelow },
+  ].filter(d => d.value > 0);
+
+  const PIE_COLORS = ["hsl(145, 45%, 45%)", "hsl(30, 80%, 55%)", "hsl(0, 65%, 55%)"];
+
+  // Bar chart: last 7 days averages
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const key = format(d, "yyyy-MM-dd");
+    const dayRecs = records.filter(r => format(new Date(r.timestamp), "yyyy-MM-dd") === key);
+    const avg = dayRecs.length ? Math.round(dayRecs.reduce((s, r) => s + r.glucose, 0) / dayRecs.length) : 0;
+    return { day: format(d, "EEE", { locale: es }).slice(0, 3), promedio: avg };
+  });
 
   const handleDelete = (index: number) => {
     const updated = records.filter((_, i) => i !== index);
