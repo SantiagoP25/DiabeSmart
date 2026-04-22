@@ -64,8 +64,45 @@ const Profile = () => {
   const [contacts, setContacts] = useState<EmergencyContact[]>(getContacts());
   const [healthOpen, setHealthOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const [medsOpen, setMedsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [newContact, setNewContact] = useState<EmergencyContact>({ name: "", phone: "", relation: "" });
+  const [medications, setMedications] = useState<Medication[]>(() => {
+    try { return JSON.parse(localStorage.getItem(MEDS_KEY) || "[]"); } catch { return []; }
+  });
+  const [newMed, setNewMed] = useState<Medication>({ name: "", dose: "", frequency: "" });
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      return raw ? JSON.parse(raw) : { notifications: true, language: "es", soundAlerts: true };
+    } catch { return { notifications: true, language: "es", soundAlerts: true }; }
+  });
   const average = getAverage();
+
+  const saveMedications = (next: Medication[]) => {
+    setMedications(next);
+    localStorage.setItem(MEDS_KEY, JSON.stringify(next));
+  };
+
+  const handleAddMed = () => {
+    if (!newMed.name.trim() || !newMed.dose.trim()) {
+      toast({ title: "Error", description: "Nombre y dosis son requeridos" });
+      return;
+    }
+    saveMedications([...medications, newMed]);
+    setNewMed({ name: "", dose: "", frequency: "" });
+    toast({ title: "✅ Medicamento agregado" });
+  };
+
+  const handleDeleteMed = (i: number) => {
+    saveMedications(medications.filter((_, idx) => idx !== i));
+  };
+
+  const updateSettings = (patch: Partial<AppSettings>) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+  };
 
   useEffect(() => {
     if (dbProfile) {
