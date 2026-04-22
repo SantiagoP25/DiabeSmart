@@ -130,6 +130,82 @@ const GlucoseTracking = () => {
         {records.length} registros guardados
       </p>
 
+      {records.length > 0 && (
+        <>
+          <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="glass-card rounded-outer p-5 mb-5">
+            <div className="flex items-center gap-2 mb-4">
+              <PieIcon size={20} className="text-primary" />
+              <h2 className="text-lg font-bold text-foreground">Tiempo en rango</h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-36 h-36 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={62} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                      {pieData.map((entry, i) => (
+                        <Cell key={i} fill={PIE_COLORS[entry.name === "En rango" ? 0 : entry.name === "Sobre rango" ? 1 : 2]} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-foreground tabular-nums">{pctIn}%</span>
+                  <span className="text-[10px] text-muted-foreground">en rango</span>
+                </div>
+              </div>
+              <div className="flex-1 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-status-good" />
+                  <span className="text-sm text-foreground font-medium">En rango</span>
+                  <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{pctIn}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-status-warning" />
+                  <span className="text-sm text-foreground font-medium">Sobre rango</span>
+                  <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{pctAbove}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-status-danger" />
+                  <span className="text-sm text-foreground font-medium">Bajo rango</span>
+                  <span className="ml-auto text-sm font-bold text-foreground tabular-nums">{pctBelow}%</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground pt-1">Objetivo: {range.min}–{range.max} mg/dL</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="glass-card rounded-outer p-5 mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 size={20} className="text-primary" />
+              <h2 className="text-lg font-bold text-foreground">Promedio semanal</h2>
+            </div>
+            <div className="w-full h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={last7Days} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+                    formatter={(v: number) => [`${v} mg/dL`, "Promedio"]}
+                  />
+                  <Bar dataKey="promedio" radius={[8, 8, 0, 0]}>
+                    {last7Days.map((d, i) => (
+                      <Cell key={i} fill={
+                        d.promedio === 0 ? "hsl(var(--muted))" :
+                        d.promedio < range.min ? "hsl(0, 65%, 55%)" :
+                        d.promedio > range.max ? "hsl(30, 80%, 55%)" :
+                        "hsl(145, 45%, 45%)"
+                      } />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+        </>
+      )}
+
       {records.length === 0 ? (
         <motion.div
           initial={{ y: 20, opacity: 0 }}
