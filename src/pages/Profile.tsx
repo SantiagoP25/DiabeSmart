@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Heart, Pill, Phone, Settings, ChevronRight, LogOut, Check, Syringe, Plus, Trash2, Calendar, Weight, Ruler, Activity } from "lucide-react";
+import { User, Heart, Pill, Phone, Settings, ChevronRight, LogOut, Check, Syringe, Plus, Trash2, Calendar, Weight, Ruler, Activity, Bell, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,8 +14,22 @@ interface EmergencyContact {
   relation: string;
 }
 
+interface Medication {
+  name: string;
+  dose: string;
+  frequency: string;
+}
+
+interface AppSettings {
+  notifications: boolean;
+  language: string;
+  soundAlerts: boolean;
+}
+
 const CONTACTS_KEY = "diabesmart_emergency_contacts";
 const RECORDS_KEY = "diabesmart_records";
+const MEDS_KEY = "diabesmart_medications";
+const SETTINGS_KEY = "diabesmart_settings";
 
 const getContacts = (): EmergencyContact[] => {
   try {
