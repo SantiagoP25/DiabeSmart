@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { buildUserStorageKey } from "@/lib/userStorage";
 import logo from "@/assets/logo.png";
 
 interface EmergencyContact {
@@ -31,16 +32,16 @@ const RECORDS_KEY = "diabesmart_records";
 const MEDS_KEY = "diabesmart_medications";
 const SETTINGS_KEY = "diabesmart_settings";
 
-const getContacts = (): EmergencyContact[] => {
+const getContacts = (userId: string | null | undefined): EmergencyContact[] => {
   try {
-    const raw = localStorage.getItem(CONTACTS_KEY);
+    const raw = localStorage.getItem(buildUserStorageKey(CONTACTS_KEY, userId));
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 };
 
-const getAverage = (): number | null => {
+const getAverage = (userId: string | null | undefined): number | null => {
   try {
-    const raw = localStorage.getItem(RECORDS_KEY);
+    const raw = localStorage.getItem(buildUserStorageKey(RECORDS_KEY, userId));
     const records = raw ? JSON.parse(raw) : [];
     if (records.length === 0) return null;
     const sum = records.reduce((s: number, r: { glucose: number }) => s + r.glucose, 0);
@@ -50,7 +51,7 @@ const getAverage = (): number | null => {
 
 const Profile = () => {
   const { profile: dbProfile, updateProfile, loading: profileLoading } = useProfile();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [editingRatio, setEditingRatio] = useState(false);
   const [ratio, setRatio] = useState("");
   const [localProfile, setLocalProfile] = useState({
@@ -61,27 +62,20 @@ const Profile = () => {
     rangeMin: "70",
     rangeMax: "180",
   });
-  const [contacts, setContacts] = useState<EmergencyContact[]>(getContacts());
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [healthOpen, setHealthOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
   const [medsOpen, setMedsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newContact, setNewContact] = useState<EmergencyContact>({ name: "", phone: "", relation: "" });
-  const [medications, setMedications] = useState<Medication[]>(() => {
-    try { return JSON.parse(localStorage.getItem(MEDS_KEY) || "[]"); } catch { return []; }
-  });
+  const [medications, setMedications] = useState<Medication[]>([]);
   const [newMed, setNewMed] = useState<Medication>({ name: "", dose: "", frequency: "" });
-  const [settings, setSettings] = useState<AppSettings>(() => {
-    try {
-      const raw = localStorage.getItem(SETTINGS_KEY);
-      return raw ? JSON.parse(raw) : { notifications: true, language: "es", soundAlerts: true };
-    } catch { return { notifications: true, language: "es", soundAlerts: true }; }
-  });
-  const average = getAverage();
+  const [settings, setSettings] = useState<AppSettings>({ notifications: true, language: "es", soundAlerts: true });
+  const average = getAverage(user?.id);
 
   const saveMedications = (next: Medication[]) => {
     setMedications(next);
-    localStorage.setItem(MEDS_KEY, JSON.stringify(next));
+    localStorage.setItem(buildUserStorageKey(MEDS_KEY, user?.id), JSON.stringify(next));
   };
 
   const handleAddMed = () => {
@@ -101,7 +95,7 @@ const Profile = () => {
   const updateSettings = (patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch };
     setSettings(next);
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+    localStorage.setItem(buildUserStorageKey(SETTINGS_KEY, user?.id), JSON.stringify(next));
   };
 
   useEffect(() => {
@@ -117,6 +111,28 @@ const Profile = () => {
       });
     }
   }, [dbProfile]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setContacts([]);
+      setMedications([]);
+      setSettings({ notifications: true, language: "es", soundAlerts: true });
+      return;
+    }
+
+    setContacts(getContacts(user.id));
+    try {
+      setMedications(JSON.parse(localStorage.getItem(buildUserStorageKey(MEDS_KEY, user.id)) || "[]"));
+    } catch {
+      setMedications([]);
+    }
+    try {
+      const raw = localStorage.getItem(buildUserStorageKey(SETTINGS_KEY, user.id));
+      setSettings(raw ? JSON.parse(raw) : { notifications: true, language: "es", soundAlerts: true });
+    } catch {
+      setSettings({ notifications: true, language: "es", soundAlerts: true });
+    }
+  }, [user?.id]);
 
   const handleSaveRatio = async () => {
     const val = parseFloat(ratio);
@@ -149,7 +165,7 @@ const Profile = () => {
     }
     const updated = [...contacts, newContact];
     setContacts(updated);
-    localStorage.setItem(CONTACTS_KEY, JSON.stringify(updated));
+    localStorage.setItem(buildUserStorageKey(CONTACTS_KEY, user?.id), JSON.stringify(updated));
     setNewContact({ name: "", phone: "", relation: "" });
     toast({ title: "✅ Contacto agregado" });
   };
@@ -157,7 +173,7 @@ const Profile = () => {
   const handleDeleteContact = (i: number) => {
     const updated = contacts.filter((_, idx) => idx !== i);
     setContacts(updated);
-    localStorage.setItem(CONTACTS_KEY, JSON.stringify(updated));
+    localStorage.setItem(buildUserStorageKey(CONTACTS_KEY, user?.id), JSON.stringify(updated));
   };
 
   const savedRatio = dbProfile?.insulin_ratio?.toString() || "";

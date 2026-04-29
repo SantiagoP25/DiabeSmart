@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Syringe, Calculator, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
 
 interface InsulinCalcDialogProps {
   open: boolean;
@@ -21,12 +22,8 @@ interface InsulinCalcDialogProps {
 const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: InsulinCalcDialogProps) => {
   const [carbs, setCarbs] = useState("");
   const [showResult, setShowResult] = useState(false);
-  const [ratio, setRatio] = useState(0);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("diabesmart_ratio");
-    setRatio(saved ? parseFloat(saved) : 0);
-  }, [open]);
+  const { profile } = useProfile();
+  const ratio = profile?.insulin_ratio ?? 0;
 
   useEffect(() => {
     if (initialCarbs && initialCarbs > 0) {

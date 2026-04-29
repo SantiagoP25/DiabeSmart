@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Clock, Droplets, Utensils, Syringe } from "lucide-react";
 import GlucoseCircle from "@/components/GlucoseCircle";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import GlucoseEntryDialog from "@/components/GlucoseEntryDialog";
 import InsulinCalcDialog from "@/components/InsulinCalcDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { buildUserStorageKey } from "@/lib/userStorage";
 import logo from "@/assets/logo.png";
 
 interface GlucoseEntry {
@@ -21,10 +23,34 @@ const Dashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
   const [lastEntry, setLastEntry] = useState<GlucoseEntry | null>(null);
+  const { user } = useAuth();
   const { profile } = useProfile();
 
-  const currentGlucose = lastEntry?.glucose ?? 104;
+  const currentGlucose = lastEntry?.glucose ?? null;
   const userName = profile?.display_name || "Usuario";
+  const getStorageKey = () => buildUserStorageKey(STORAGE_KEY, user?.id);
+
+  const loadLastEntry = () => {
+    try {
+      const raw = localStorage.getItem(getStorageKey());
+      const entries: { glucose: number; meal: string; insulinUnits: number; timestamp: string }[] = raw ? JSON.parse(raw) : [];
+      if (entries.length === 0) {
+        setLastEntry(null);
+        return;
+      }
+
+      const latest = entries[entries.length - 1];
+      setLastEntry({
+        glucose: latest.glucose,
+        meal: latest.meal,
+        insulinUnits: latest.insulinUnits,
+        timestamp: new Date(latest.timestamp),
+      });
+    } catch {
+      setLastEntry(null);
+    }
+  };
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return "Buenos días";
@@ -32,23 +58,27 @@ const Dashboard = () => {
     return "Buenas noches";
   };
 
+  useEffect(() => {
+    loadLastEntry();
+  }, [user?.id]);
+
   const handleSaveEntry = (entry: GlucoseEntry) => {
     setLastEntry(entry);
     // Persist to localStorage
     try {
-      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const existing = JSON.parse(localStorage.getItem(getStorageKey()) || "[]");
       existing.push({
         glucose: entry.glucose,
         meal: entry.meal,
         insulinUnits: entry.insulinUnits,
         timestamp: entry.timestamp.toISOString(),
       });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+      localStorage.setItem(getStorageKey(), JSON.stringify(existing));
     } catch { /* ignore */ }
   };
 
   const timeSinceLastReading = () => {
-    if (!lastEntry) return "hace 15 min";
+    if (!lastEntry) return "sin registros";
     const diff = Math.round((Date.now() - lastEntry.timestamp.getTime()) / 60000);
     if (diff < 1) return "ahora mismo";
     if (diff < 60) return `hace ${diff} min`;
@@ -100,10 +130,10 @@ const Dashboard = () => {
           </div>
           <p className="text-sm font-medium text-muted-foreground">Última comida</p>
           <p className="text-xl font-bold text-foreground mt-1">
-            {lastEntry ? "Ahora" : "1h atrás"}
+            {lastEntry ? "Ahora" : "Sin datos"}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            {lastEntry?.meal || "Arroz con pollo"}
+            {lastEntry?.meal || "Aún no hay registros"}
           </p>
         </motion.div>
 
@@ -118,9 +148,9 @@ const Dashboard = () => {
           </div>
           <p className="text-sm font-medium text-muted-foreground">Última dosis</p>
           <p className="text-xl font-bold text-foreground mt-1">
-            {lastEntry ? `${lastEntry.insulinUnits}u` : "8:00 PM"}
+            {lastEntry ? `${lastEntry.insulinUnits}u` : "Sin datos"}
           </p>
-          <p className="text-sm text-muted-foreground mt-1">Insulina rápida</p>
+          <p className="text-sm text-muted-foreground mt-1">{lastEntry ? "Insulina rápida" : "Aún no registraste dosis"}</p>
         </motion.div>
       </div>
 

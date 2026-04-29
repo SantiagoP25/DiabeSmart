@@ -5,9 +5,11 @@ import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer } from "rechart
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { buildUserStorageKey } from "@/lib/userStorage";
 
 const RECORDS_KEY = "diabesmart_records";
-const PROFILE_KEY = "diabesmart_health_profile";
 const CONTACTS_KEY = "diabesmart_emergency_contacts";
 const REMINDERS_KEY = "diabesmart_reminders";
 
@@ -40,30 +42,19 @@ interface Reminder {
 
 const iconMap = { droplets: Droplets, syringe: Syringe, clock: Clock };
 
-const defaultReminders: Reminder[] = [
-  { id: "r1", icon: "droplets", title: "Medir glucosa", time: "18:00", active: true },
-  { id: "r2", icon: "syringe", title: "Dosis de insulina", time: "20:00", active: true },
-  { id: "r3", icon: "clock", title: "Tomar medicamento", time: "21:00", active: false },
-];
+const defaultReminders: Reminder[] = [];
 
-const getRecords = (): GlucoseRecord[] => {
-  try { return JSON.parse(localStorage.getItem(RECORDS_KEY) || "[]"); } catch { return []; }
+const getRecords = (userId: string | null | undefined): GlucoseRecord[] => {
+  try { return JSON.parse(localStorage.getItem(buildUserStorageKey(RECORDS_KEY, userId)) || "[]"); } catch { return []; }
 };
 
-const getProfile = (): HealthProfile => {
+const getContacts = (userId: string | null | undefined): EmergencyContact[] => {
+  try { return JSON.parse(localStorage.getItem(buildUserStorageKey(CONTACTS_KEY, userId)) || "[]"); } catch { return []; }
+};
+
+const getReminders = (userId: string | null | undefined): Reminder[] => {
   try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    return raw ? JSON.parse(raw) : { rangeMin: "70", rangeMax: "180" };
-  } catch { return { rangeMin: "70", rangeMax: "180" }; }
-};
-
-const getContacts = (): EmergencyContact[] => {
-  try { return JSON.parse(localStorage.getItem(CONTACTS_KEY) || "[]"); } catch { return []; }
-};
-
-const getReminders = (): Reminder[] => {
-  try {
-    const raw = localStorage.getItem(REMINDERS_KEY);
+    const raw = localStorage.getItem(buildUserStorageKey(REMINDERS_KEY, userId));
     return raw ? JSON.parse(raw) : defaultReminders;
   } catch { return defaultReminders; }
 };
@@ -77,23 +68,23 @@ const formatTime12 = (time24: string) => {
 };
 
 const Alerts = () => {
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const [records, setRecords] = useState<GlucoseRecord[]>([]);
-  const [profile, setProfile] = useState<HealthProfile>(getProfile());
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>(defaultReminders);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Reminder | null>(null);
 
   useEffect(() => {
-    setRecords(getRecords());
-    setProfile(getProfile());
-    setContacts(getContacts());
-    setReminders(getReminders());
-  }, []);
+    setRecords(getRecords(user?.id));
+    setContacts(getContacts(user?.id));
+    setReminders(getReminders(user?.id));
+  }, [user?.id]);
 
   const persistReminders = (next: Reminder[]) => {
     setReminders(next);
-    localStorage.setItem(REMINDERS_KEY, JSON.stringify(next));
+    localStorage.setItem(buildUserStorageKey(REMINDERS_KEY, user?.id), JSON.stringify(next));
   };
 
   const openEdit = (r?: Reminder) => {
@@ -124,8 +115,8 @@ const Alerts = () => {
     persistReminders(reminders.map(r => r.id === id ? { ...r, active: !r.active } : r));
   };
 
-  const rangeMin = parseInt(profile.rangeMin) || 70;
-  const rangeMax = parseInt(profile.rangeMax) || 180;
+  const rangeMin = profile?.glucose_min ? Number(profile.glucose_min) : 70;
+  const rangeMax = profile?.glucose_max ? Number(profile.glucose_max) : 180;
 
   const inRange = records.filter(r => r.glucose >= rangeMin && r.glucose <= rangeMax).length;
   const belowRange = records.filter(r => r.glucose < rangeMin).length;

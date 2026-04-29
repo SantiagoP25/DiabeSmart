@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
 
 interface GlucoseCircleProps {
-  value: number;
+  value: number | null;
   unit?: string;
   status?: "good" | "warning" | "danger";
 }
@@ -26,10 +26,11 @@ const statusColors = {
 };
 
 const GlucoseCircle = ({ value, unit = "mg/dL", status }: GlucoseCircleProps) => {
-  const resolvedStatus = status ?? getAutoStatus(value);
+  const hasValue = value !== null && value !== undefined;
+  const resolvedStatus = hasValue ? (status ?? getAutoStatus(value)) : "good";
 
-  const showHighAlert = value > 180;
-  const showLowAlert = value < 60;
+  const showHighAlert = hasValue && value > 180;
+  const showLowAlert = hasValue && value < 60;
 
   return (
     <motion.div
@@ -39,8 +40,17 @@ const GlucoseCircle = ({ value, unit = "mg/dL", status }: GlucoseCircleProps) =>
       className="flex flex-col items-center gap-4"
     >
       <div className="glucose-circle w-52 h-52 rounded-full flex flex-col items-center justify-center">
-        <span className="text-metric-lg tabular-nums text-foreground">{value}</span>
-        <span className="text-lg font-medium text-muted-foreground">{unit}</span>
+        {hasValue ? (
+          <>
+            <span className="text-metric-lg tabular-nums text-foreground">{value}</span>
+            <span className="text-lg font-medium text-muted-foreground">{unit}</span>
+          </>
+        ) : (
+          <>
+            <span className="text-metric-lg tabular-nums text-foreground">—</span>
+            <span className="text-lg font-medium text-muted-foreground">Sin lectura</span>
+          </>
+        )}
       </div>
       <span
         className={`px-5 py-2 rounded-full text-base font-semibold ${statusColors[resolvedStatus]}`}

@@ -4,6 +4,9 @@ import { Sun, Coffee, Moon, Utensils, TrendingUp, Droplets, Syringe, Trash2, Pie
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { buildUserStorageKey } from "@/lib/userStorage";
 
 interface GlucoseRecord {
   glucose: number;
@@ -13,11 +16,10 @@ interface GlucoseRecord {
 }
 
 const STORAGE_KEY = "diabesmart_records";
-const PROFILE_KEY = "diabesmart_health_profile";
 
-const getRecords = (): GlucoseRecord[] => {
+const getRecords = (userId: string | null | undefined): GlucoseRecord[] => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(buildUserStorageKey(STORAGE_KEY, userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -47,22 +49,21 @@ const statusBg: Record<string, string> = {
 };
 
 const GlucoseTracking = () => {
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const [records, setRecords] = useState<GlucoseRecord[]>([]);
   const [range, setRange] = useState<{ min: number; max: number }>({ min: 70, max: 180 });
 
   useEffect(() => {
-    setRecords(getRecords());
-    try {
-      const raw = localStorage.getItem(PROFILE_KEY);
-      if (raw) {
-        const p = JSON.parse(raw);
-        setRange({
-          min: parseInt(p.rangeMin) || 70,
-          max: parseInt(p.rangeMax) || 180,
-        });
-      }
-    } catch { /* noop */ }
-  }, []);
+    setRecords(getRecords(user?.id));
+  }, [user?.id]);
+
+  useEffect(() => {
+    setRange({
+      min: profile?.glucose_min ? Number(profile.glucose_min) : 70,
+      max: profile?.glucose_max ? Number(profile.glucose_max) : 180,
+    });
+  }, [profile?.glucose_min, profile?.glucose_max]);
 
   // Time in range stats
   const inRange = records.filter(r => r.glucose >= range.min && r.glucose <= range.max).length;
@@ -93,7 +94,7 @@ const GlucoseTracking = () => {
 
   const handleDelete = (index: number) => {
     const updated = records.filter((_, i) => i !== index);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(buildUserStorageKey(STORAGE_KEY, user?.id), JSON.stringify(updated));
     setRecords(updated);
   };
 
