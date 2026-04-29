@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -21,8 +20,7 @@ const queryClient = new QueryClient();
 
 const ProtectedRoutes = () => {
   const { session, loading } = useAuth();
-  const { profile, loading: profileLoading, isProfileComplete, refetch } = useProfile();
-  const [onboardingDone, setOnboardingDone] = useState(false);
+  const { loading: profileLoading, isProfileComplete, refetch } = useProfile();
 
   if (loading || profileLoading) {
     return (
@@ -36,8 +34,8 @@ const ProtectedRoutes = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!isProfileComplete && !onboardingDone) {
-    return <Onboarding onComplete={() => { setOnboardingDone(true); refetch(); }} />;
+  if (!isProfileComplete) {
+    return <Onboarding onComplete={() => { refetch(); }} />;
   }
 
   return (

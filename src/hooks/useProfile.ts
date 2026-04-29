@@ -19,12 +19,17 @@ export const useProfile = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
-    if (!user) { setLoading(false); return; }
+    if (!user) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
     const { data } = await supabase
       .from("profiles")
       .select("display_name, weight, height, diabetes_type, debut_date, insulin_ratio, glucose_min, glucose_max")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
     setProfile(data);
     setLoading(false);
   };
@@ -33,18 +38,26 @@ export const useProfile = () => {
 
   const updateProfile = async (updates: Partial<ProfileData>) => {
     if (!user) return;
-    const { error } = await supabase
+    const payload = {
+      user_id: user.id,
+      ...updates,
+    };
+
+    const { data, error } = await supabase
       .from("profiles")
-      .update(updates)
-      .eq("user_id", user.id);
+      .upsert(payload, { onConflict: "user_id" })
+      .select("display_name, weight, height, diabetes_type, debut_date, insulin_ratio, glucose_min, glucose_max")
+      .single();
+
     if (!error) {
-      setProfile((prev) => prev ? { ...prev, ...updates } : null);
+      setProfile(data);
     }
+
     return { error };
   };
 
   const isProfileComplete = profile
-    ? !!(profile.display_name && profile.weight && profile.height && profile.diabetes_type)
+    ? !!(profile.display_name && profile.diabetes_type)
     : false;
 
   return { profile, loading, updateProfile, refetch: fetchProfile, isProfileComplete };

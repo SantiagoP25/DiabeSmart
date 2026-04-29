@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
@@ -11,7 +11,6 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -25,19 +24,51 @@ const Auth = () => {
         if (error) throw error;
         toast({ title: "¡Bienvenido!", description: "Inicio de sesión exitoso" });
       } else {
-        const { error } = await supabase.auth.signUp({
+        // Registrar el usuario
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { display_name: displayName },
             emailRedirectTo: window.location.origin,
           },
         });
-        if (error) throw error;
-        toast({
-          title: "¡Cuenta creada!",
-          description: "Revisa tu correo para confirmar tu cuenta",
-        });
+
+        if (signUpError) {
+          const alreadyRegistered = signUpError.message?.toLowerCase().includes("already registered");
+          if (alreadyRegistered) {
+            const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+            if (signInError) {
+              throw signUpError;
+            }
+
+            toast({
+              title: "Sesión iniciada",
+              description: "Ya tenías cuenta, te hemos iniciado sesión",
+            });
+            return;
+          }
+
+          throw signUpError;
+        }
+
+        // Intentar auto-login después del registro
+        if (signUpData?.user) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (!signInError) {
+            toast({
+              title: "¡Cuenta creada!",
+              description: "Configura tu perfil para comenzar",
+            });
+          } else {
+            toast({
+              title: "Cuenta creada",
+              description: "Por favor inicia sesión",
+            });
+          }
+        }
       }
     } catch (error: any) {
       toast({
@@ -100,27 +131,6 @@ const Auth = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              className="space-y-2"
-            >
-              <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
-                <User size={18} className="text-primary" />
-                Nombre completo
-              </Label>
-              <Input
-                type="text"
-                placeholder="Ej: Oscar Aldana"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="h-12 text-base rounded-inner"
-                required={!isLogin}
-              />
-            </motion.div>
-          )}
-
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Mail size={18} className="text-primary" />
