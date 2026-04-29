@@ -87,12 +87,9 @@ DiabeSmart ofrece:
 
 ## 🛠️ Tecnologías (Ejemplo)
 
-> ⚠️ Ajusta esta sección según lo que realmente estés usando
-
-- **Frontend:** React Native / Ionic
-- **Backend:** .NET / Node.js
-- **Base de Datos:** MySQL / SQL Server
-- **IA:** APIs de Machine Learning (opcional)
+- **Frontend:** TypeScript, Vite, Tailwind CSS
+- **Backend:** BaaS, Supabase
+- **Base de Datos:** PostgreSQL (via Supabase)
 - **Control de versiones:** Git & GitHub
 
 ---
