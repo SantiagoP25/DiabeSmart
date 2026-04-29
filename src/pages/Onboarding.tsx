@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { User, Weight, Ruler, Activity, Calendar, Syringe, Target } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, type ProfileData } from "@/hooks/useProfile";
 import logo from "@/assets/logo.png";
 
 const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
@@ -16,6 +16,7 @@ const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
     diabetes_type: "Tipo 1",
     debut_date: "",
     insulin_ratio: "",
+    insulin_sensitivity: "",
     glucose_min: "70",
     glucose_max: "180",
   });
@@ -27,7 +28,7 @@ const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
       return;
     }
     setSaving(true);
-    const { error } = await updateProfile({
+    const updates: Partial<ProfileData> = {
       display_name: form.display_name.trim(),
       weight: form.weight ? parseFloat(form.weight) : null,
       height: form.height ? parseFloat(form.height) : null,
@@ -36,7 +37,13 @@ const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
       insulin_ratio: form.insulin_ratio ? parseFloat(form.insulin_ratio) : null,
       glucose_min: parseFloat(form.glucose_min) || 70,
       glucose_max: parseFloat(form.glucose_max) || 180,
-    }) ?? { error: null };
+    };
+
+    if (form.insulin_sensitivity) {
+      updates.insulin_sensitivity = parseFloat(form.insulin_sensitivity);
+    }
+
+    const { error } = await updateProfile(updates) ?? { error: null };
     setSaving(false);
     if (error) {
       toast({ title: "Error", description: "No se pudo guardar", variant: "destructive" });
@@ -134,6 +141,19 @@ const Onboarding = ({ onComplete }: { onComplete: () => void }) => {
           className="h-12 text-base rounded-inner"
         />
         <p className="text-xs text-muted-foreground mt-1">Tu médico te indica este valor. Puedes cambiarlo después en Ajustes.</p>
+      </div>
+      <div>
+        <label className="text-sm font-semibold text-foreground flex items-center gap-2 mb-2">
+          <Syringe size={16} className="text-primary" /> Sensibilidad a la insulina (mg/dL por 1U)
+        </label>
+        <Input
+          type="number"
+          placeholder="Ej: 50"
+          value={form.insulin_sensitivity}
+          onChange={(e) => setForm({ ...form, insulin_sensitivity: e.target.value })}
+          className="h-12 text-base rounded-inner"
+        />
+        <p className="text-xs text-muted-foreground mt-1">Tambien conocida como factor de correccion.</p>
       </div>
     </div>,
 

@@ -25,6 +25,7 @@ export type Database = {
           height: number | null
           id: string
           insulin_ratio: number | null
+          insulin_sensitivity: number | null
           updated_at: string
           user_id: string
           weight: number | null
@@ -39,6 +40,7 @@ export type Database = {
           height?: number | null
           id?: string
           insulin_ratio?: number | null
+          insulin_sensitivity?: number | null
           updated_at?: string
           user_id: string
           weight?: number | null
@@ -53,6 +55,7 @@ export type Database = {
           height?: number | null
           id?: string
           insulin_ratio?: number | null
+          insulin_sensitivity?: number | null
           updated_at?: string
           user_id?: string
           weight?: number | null

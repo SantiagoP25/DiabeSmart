@@ -21,9 +21,11 @@ interface InsulinCalcDialogProps {
 
 const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: InsulinCalcDialogProps) => {
   const [carbs, setCarbs] = useState("");
+  const [currentGlucose, setCurrentGlucose] = useState("");
   const [showResult, setShowResult] = useState(false);
   const { profile } = useProfile();
   const ratio = profile?.insulin_ratio ?? 0;
+  const sensitivity = profile?.insulin_sensitivity ?? 0;
 
   useEffect(() => {
     if (initialCarbs && initialCarbs > 0) {
@@ -32,7 +34,13 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: Insu
   }, [initialCarbs]);
 
   const carbsNum = parseFloat(carbs);
-  const dose = ratio > 0 && carbsNum > 0 ? carbsNum / ratio : 0;
+  const currentGlucoseNum = parseFloat(currentGlucose);
+  const targetGlucoseNum = profile?.glucose_min ?? 100;
+  const foodDose = ratio > 0 && carbsNum > 0 ? carbsNum / ratio : 0;
+  const correctionDose = sensitivity > 0 && currentGlucoseNum > 0 && targetGlucoseNum > 0
+    ? (currentGlucoseNum - targetGlucoseNum) / sensitivity
+    : 0;
+  const totalDose = foodDose + correctionDose;
 
   const handleCalculate = () => {
     if (!ratio || ratio <= 0) {
@@ -40,6 +48,17 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: Insu
         title: "⚠️ Ratio no configurado",
         description: "Ve a Mi Perfil → Configuración para establecer tu ratio de insulina.",
       });
+      return;
+    }
+    if (!sensitivity || sensitivity <= 0) {
+      toast({
+        title: "⚠️ Sensibilidad no configurada",
+        description: "Ve a Mi Perfil → Configuración para establecer tu sensibilidad a la insulina.",
+      });
+      return;
+    }
+    if (!currentGlucoseNum || currentGlucoseNum <= 0) {
+      toast({ title: "Error", description: "Ingresa la glucosa actual" });
       return;
     }
     if (!carbsNum || carbsNum <= 0) {
@@ -72,9 +91,9 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: Insu
 
         <div className="space-y-5 py-2">
           {/* Ratio display */}
-          <div className="glass-card rounded-inner p-4">
+          <div className="glass-card rounded-inner p-4 space-y-2">
             {ratio > 0 ? (
-              <p className="text-lg font-bold text-foreground">
+              <p className="text-sm font-bold text-foreground">
                 Tu ratio: 1 U por cada <span className="text-primary">{ratio}g</span> de HC
               </p>
             ) : (
@@ -85,6 +104,21 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: Insu
                 </p>
               </div>
             )}
+            {sensitivity > 0 ? (
+              <p className="text-sm font-bold text-foreground">
+                Sensibilidad: 1 U corrige <span className="text-primary">{sensitivity} mg/dL</span>
+              </p>
+            ) : (
+              <div className="flex items-center gap-3 text-status-warning">
+                <AlertTriangle size={20} />
+                <p className="text-sm font-semibold">
+                  Sensibilidad no configurada. Ve a <span className="underline">Mi Perfil → Configuración</span> para establecerla.
+                </p>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Objetivo usado: <span className="font-semibold text-foreground">{targetGlucoseNum} mg/dL</span>
+            </p>
           </div>
 
           {/* Breakdown of foods */}
@@ -124,6 +158,26 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: Insu
             />
           </div>
 
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Syringe size={18} className="text-primary" />
+              Glucosa actual (mg/dL)
+            </Label>
+            <Input
+              type="number"
+              placeholder="Ej: 365"
+              value={currentGlucose}
+              onChange={(e) => {
+                setCurrentGlucose(e.target.value);
+                setShowResult(false);
+              }}
+              min={0}
+              max={600}
+              className="text-lg h-12 rounded-inner"
+            />
+          </div>
+
+
           {/* Calculate Button */}
           <button
             onClick={handleCalculate}
@@ -134,15 +188,26 @@ const InsulinCalcDialog = ({ open, onOpenChange, initialCarbs, breakdown }: Insu
           </button>
 
           {/* Result */}
-          {showResult && dose > 0 && (
+          {showResult && totalDose !== 0 && (
             <div className="bg-primary/10 border border-primary/20 rounded-inner p-5 text-center space-y-2">
               <p className="text-sm font-semibold text-muted-foreground">Tu dosis recomendada</p>
               <p className="text-4xl font-black text-primary">
-                {dose % 1 === 0 ? dose : dose.toFixed(1)} U
+                {totalDose % 1 === 0 ? totalDose : totalDose.toFixed(1)} U
               </p>
-              <p className="text-sm text-muted-foreground">
-                {carbsNum}g HC ÷ {ratio} ratio = <span className="font-bold text-foreground">{dose.toFixed(2)} unidades</span>
-              </p>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p>
+                  Dosis por alimentos: <span className="font-bold text-foreground">{foodDose.toFixed(2)} U</span>
+                </p>
+                <p>
+                  Dosis de correccion: <span className="font-bold text-foreground">{correctionDose.toFixed(2)} U</span>
+                </p>
+                <p>
+                  Dosis total: <span className="font-bold text-foreground">{totalDose.toFixed(2)} U</span>
+                </p>
+                <p className="pt-2">
+                  {carbsNum}g HC ÷ {ratio} + ({currentGlucoseNum} - {targetGlucoseNum}) ÷ {sensitivity}
+                </p>
+              </div>
               <div className="mt-3 pt-3 border-t border-primary/20">
                 <p className="text-xs text-muted-foreground">
                   ⚠️ Esta es una estimación. Consulta siempre con tu médico antes de ajustar tu dosis.

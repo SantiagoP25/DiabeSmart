@@ -53,7 +53,9 @@ const Profile = () => {
   const { profile: dbProfile, updateProfile, loading: profileLoading } = useProfile();
   const { user, signOut } = useAuth();
   const [editingRatio, setEditingRatio] = useState(false);
+  const [editingSensitivity, setEditingSensitivity] = useState(false);
   const [ratio, setRatio] = useState("");
+  const [sensitivity, setSensitivity] = useState("");
   const [localProfile, setLocalProfile] = useState({
     weight: "",
     height: "",
@@ -101,6 +103,7 @@ const Profile = () => {
   useEffect(() => {
     if (dbProfile) {
       setRatio(dbProfile.insulin_ratio?.toString() || "");
+      setSensitivity(dbProfile.insulin_sensitivity?.toString() || "");
       setLocalProfile({
         weight: dbProfile.weight?.toString() || "",
         height: dbProfile.height?.toString() || "",
@@ -145,6 +148,25 @@ const Profile = () => {
     toast({ title: "✅ Ratio guardado", description: `Tu ratio es 1:${val}` });
   };
 
+  const handleSaveSensitivity = async () => {
+    const val = parseFloat(sensitivity);
+    if (!val || val <= 0) {
+      toast({ title: "Error", description: "Ingresa una sensibilidad valida (ej: 50)" });
+      return;
+    }
+    const result = await updateProfile({ insulin_sensitivity: val });
+    if (result?.error) {
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la sensibilidad. Verifica la migracion en Supabase.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEditingSensitivity(false);
+    toast({ title: "✅ Sensibilidad guardada", description: `Tu factor es ${val} mg/dL por 1U` });
+  };
+
   const handleSaveProfile = async () => {
     await updateProfile({
       weight: localProfile.weight ? parseFloat(localProfile.weight) : null,
@@ -177,6 +199,7 @@ const Profile = () => {
   };
 
   const savedRatio = dbProfile?.insulin_ratio?.toString() || "";
+  const savedSensitivity = dbProfile?.insulin_sensitivity?.toString() || "";
 
   return (
     <div className="min-h-screen pb-28 px-5 pt-6 max-w-md mx-auto">
@@ -237,6 +260,42 @@ const Profile = () => {
             <p className="text-xs text-muted-foreground mt-1">Configurado por tu profesional de salud</p>
           </div>
         )}
+
+        <div className="mt-5 pt-5 border-t border-border">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Syringe size={20} className="text-primary" />
+              <h3 className="text-base font-bold text-foreground">Sensibilidad a la insulina</h3>
+            </div>
+            {!editingSensitivity && savedSensitivity && (
+              <button onClick={() => setEditingSensitivity(true)} className="text-xs text-primary font-semibold">Cambiar</button>
+            )}
+          </div>
+          {editingSensitivity || !savedSensitivity ? (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">Cuantos mg/dL baja 1 unidad de insulina.</p>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Ej: 50"
+                  value={sensitivity}
+                  onChange={(e) => setSensitivity(e.target.value)}
+                  min={1}
+                  max={300}
+                  className="text-lg h-12 rounded-inner flex-1"
+                />
+                <button onClick={handleSaveSensitivity} className="h-12 px-4 bg-primary text-primary-foreground rounded-inner font-semibold flex items-center gap-1">
+                  <Check size={16} /> Guardar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-2xl font-bold text-foreground">1 U corrige <span className="text-primary">{savedSensitivity} mg/dL</span></p>
+              <p className="text-xs text-muted-foreground mt-1">Configurado por tu profesional de salud</p>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* Menu */}
